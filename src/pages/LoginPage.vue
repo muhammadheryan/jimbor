@@ -5,12 +5,11 @@ import { loginData } from '../data/mockData'
 </script>
 
 <template>
-  <div class="grid items-center gap-6 min-h-screen p-6">
-    <section class="w-full max-w-full p-6 border border-surface-outline rounded-[28px] bg-gradient-to-b from-[rgba(22,27,34,0.98)] to-[rgba(15,20,27,0.98)] shadow-custom">
-      <p class="m-0 text-text-muted text-[0.78rem] tracking-[0.12em] uppercase">Gym tracker PWA</p>
-      <h1 class="m-0 mt-2 font-black leading-[0.92] tracking-[0.04em] uppercase text-[clamp(3.4rem,10vw,5rem)]">JIMBOR</h1>
-      <h2 class="m-0 mt-4 font-black leading-[0.92] tracking-[0.04em] uppercase text-[clamp(2.6rem,8vw,4.5rem)] max-w-[10ch]">{{ loginData.title }}</h2>
-      <p class="max-w-[72ch] m-0 mt-4 text-text-soft leading-[1.6]">{{ loginData.description }}</p>
+  <div class="flex flex-col items-center justify-center gap-4 min-h-screen p-6 md:max-w-[50%] md:mx-auto">
+    <section class="w-full p-6 border border-surface-outline rounded-[28px] bg-gradient-to-b from-[rgba(22,27,34,0.98)] to-[rgba(15,20,27,0.98)] shadow-custom">
+      <p class="m-0 text-text-muted text-[0.78rem] tracking-[0.12em] uppercase">Gym tracker</p>
+      <h1 class="m-0 mt-2 font-black leading-[0.92] tracking-[0.04em] uppercase text-[clamp(3.4rem,10vw,5rem)] text-blue">JIMBOR</h1>
+      <h2 class="m-0 mt-4 font-black leading-[0.92] tracking-[0.04em] uppercase text-[clamp(2rem,6vw,3.5rem)] max-w-[12ch]">{{ loginData.title }}</h2>
     </section>
 
     <section class="w-full max-w-full p-6 border border-surface-outline rounded-[28px] bg-gradient-to-b from-[rgba(22,27,34,0.98)] to-[rgba(15,20,27,0.98)] shadow-custom">
@@ -42,10 +41,10 @@ import { loginData } from '../data/mockData'
 
       <p class="mt-4 mb-0 text-text-muted text-center">No account yet? Create one</p>
 
-      <div class="grid gap-2.5 mt-[18px] p-4 rounded-[18px] bg-[rgba(15,20,27,0.92)] text-text-muted text-sm break-words">
+      <!-- <div class="grid gap-2.5 mt-[18px] p-4 rounded-[18px] bg-[rgba(15,20,27,0.92)] text-text-muted text-sm break-words">
         <p class="m-0"><strong>Backend base URL:</strong> {{ API_BASE_URL }}</p>
         <p class="m-0"><strong>Login route:</strong> POST {{ apiRoutes.auth.login }}</p>
-      </div>
+      </div> -->
     </section>
   </div>
 </template>

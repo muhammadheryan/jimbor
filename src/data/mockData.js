@@ -319,6 +319,39 @@ export const ptZoneData = {
   comments: [
     { title: 'Apr 4 - Coach Andi', body: 'Bench lockout looked cleaner. Keep this pacing next week.' },
     { title: 'Apr 1 - Coach Andi', body: 'Great consistency finishing leg day even on a low-energy day.' },
-    { title: 'Mar 29 - Coach Andi', body: 'Pull volume is trending well. Watch elbow fatigue.' },
+  ],
+}
+
+export const historyWorkoutDetailData = {
+  duration: '1h 05m',
+  flag: 'Fresh',
+  summary: [
+    { label: 'Total sets', value: '18' },
+    { label: 'Total reps', value: '156' },
+  ],
+  exercises: [
+    {
+      name: 'Bench Press',
+      sets: [
+        { weight: '60kg', reps: 10 },
+        { weight: '60kg', reps: 10 },
+        { weight: '60kg', reps: 8 },
+      ],
+    },
+    {
+      name: 'Incline DB Press',
+      sets: [
+        { weight: '24kg', reps: 12 },
+        { weight: '24kg', reps: 10 },
+      ],
+    },
+    {
+      name: 'Lateral Raise',
+      sets: [
+        { weight: '10kg', reps: 15 },
+        { weight: '10kg', reps: 15 },
+        { weight: '10kg', reps: 15 },
+      ],
+    },
   ],
 }

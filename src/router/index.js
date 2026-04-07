@@ -8,6 +8,7 @@ import ProgramDetailPage from '../pages/ProgramDetailPage.vue'
 import SplitSelectorPage from '../pages/SplitSelectorPage.vue'
 import HistoryPage from '../pages/HistoryPage.vue'
 import ExerciseHistoryDetailPage from '../pages/ExerciseHistoryDetailPage.vue'
+import HistoryWorkoutDetailPage from '../pages/HistoryWorkoutDetailPage.vue'
 import PtZonePage from '../pages/PtZonePage.vue'
 import NotFoundPage from '../pages/NotFoundPage.vue'
 
@@ -72,6 +73,12 @@ const routes = [
     name: 'exercise-history-detail',
     component: ExerciseHistoryDetailPage,
     meta: { title: 'Exercise History' },
+  },
+  {
+    path: '/history/workout/:date',
+    name: 'history-workout-detail',
+    component: HistoryWorkoutDetailPage,
+    meta: { title: 'Workout History Detail' },
   },
   {
     path: '/pt-zone',
