@@ -153,18 +153,19 @@ const filteredSessionHistory = computed(() => [...filteredChartSessions.value].s
 const historyPage = ref(1)
 const historyPageSize = 5
 const selectedSessionDetail = ref(null)
+const isChartFullscreen = ref(false)
 
 const latestSession = computed(() => filteredChartSessions.value.at(-1) ?? null)
 const bestWeight = computed(() =>
   filteredChartSessions.value.length ? Math.max(...filteredChartSessions.value.map((session) => session.weight)) : 0,
 )
-const averageSets = computed(() => {
+const averageReps = computed(() => {
   if (!filteredChartSessions.value.length) {
     return 0
   }
 
-  const totalSets = filteredChartSessions.value.reduce((sum, session) => sum + session.sets, 0)
-  return totalSets / filteredChartSessions.value.length
+  const totalReps = filteredChartSessions.value.reduce((sum, session) => sum + session.reps, 0)
+  return totalReps / filteredChartSessions.value.length
 })
 
 const applyQuickRange = (days) => {
@@ -214,7 +215,7 @@ const buildDomain = (values, minimumPadding = 0) => {
 }
 
 const weightDomain = computed(() => buildDomain(filteredChartSessions.value.map((session) => session.weight), 0))
-const setDomain = computed(() => buildDomain(filteredChartSessions.value.map((session) => session.sets), 0.4))
+const repDomain = computed(() => buildDomain(filteredChartSessions.value.map((session) => session.reps), 0.4))
 
 const plotWidth = chartFrame.width - chartFrame.paddingLeft - chartFrame.paddingRight
 const plotHeight = chartFrame.height - chartFrame.paddingTop - chartFrame.paddingBottom
@@ -236,7 +237,7 @@ const chartPoints = computed(() =>
       ...session,
       x,
       weightY: projectY(session.weight, weightDomain.value),
-      setsY: projectY(session.sets, setDomain.value),
+      repsY: projectY(session.reps, repDomain.value),
     }
   }),
 )
@@ -245,19 +246,19 @@ const buildLinePath = (points, key) =>
   points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point[key]}`).join(' ')
 
 const weightPath = computed(() => buildLinePath(chartPoints.value, 'weightY'))
-const setPath = computed(() => buildLinePath(chartPoints.value, 'setsY'))
+const repPath = computed(() => buildLinePath(chartPoints.value, 'repsY'))
 
 const axisTicks = computed(() =>
   Array.from({ length: 4 }, (_, index) => {
     const ratio = index / 3
     const y = chartFrame.paddingTop + ratio * plotHeight
     const weightValue = weightDomain.value.max - ratio * (weightDomain.value.max - weightDomain.value.min)
-    const setValue = setDomain.value.max - ratio * (setDomain.value.max - setDomain.value.min)
+    const repValue = repDomain.value.max - ratio * (repDomain.value.max - repDomain.value.min)
 
     return {
       y,
       weightLabel: `${weightValue.toFixed(weightValue >= 100 ? 0 : 1).replace(/\.0$/, '')} kg`,
-      setLabel: `${setValue.toFixed(setValue >= 10 ? 0 : 1).replace(/\.0$/, '')} sets`,
+      repLabel: `${repValue.toFixed(repValue >= 10 ? 0 : 1).replace(/\.0$/, '')} reps`,
     }
   }),
 )
@@ -296,6 +297,14 @@ const openSessionDetail = (session) => {
 
 const closeSessionDetail = () => {
   selectedSessionDetail.value = null
+}
+
+const openChartFullscreen = () => {
+  isChartFullscreen.value = true
+}
+
+const closeChartFullscreen = () => {
+  isChartFullscreen.value = false
 }
 </script>
 
@@ -350,18 +359,32 @@ const closeSessionDetail = () => {
       </article>
 
       <article class="p-[18px] bg-surface-soft border border-surface-outline rounded-[24px] shadow-custom">
-        <p class="m-0 text-[0.78rem] uppercase tracking-[0.12em] text-text-muted">Average Sets</p>
-        <h2 class="m-0 mt-2 text-[2rem] font-black text-text">{{ averageSets ? averageSets.toFixed(1) : '-' }}</h2>
-        <p class="m-0 mt-2 text-text-muted">Average number of sets across the selected sessions.</p>
+        <p class="m-0 text-[0.78rem] uppercase tracking-[0.12em] text-text-muted">Average Reps</p>
+        <h2 class="m-0 mt-2 text-[2rem] font-black text-text">{{ averageReps ? averageReps.toFixed(1) : '-' }}</h2>
+        <p class="m-0 mt-2 text-text-muted">Average reps across the selected sessions.</p>
       </article>
     </div> -->
 
-    <SectionCard title="Progress Chart" subtitle="Weight and sets by training date.">
+    <SectionCard title="Progress Chart" subtitle="Weight and reps by training date.">
       <div class="flex flex-col gap-5">
-        <div class="flex flex-col gap-2">
-          <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0 flex-1">
             <p class="m-0 text-text-soft">{{ rangeSummary }}</p>
           </div>
+
+          <button
+            type="button"
+            class="inline-flex shrink-0 min-h-[42px] items-center justify-center gap-2 rounded-[14px] border border-surface-outline bg-surface-soft px-4 font-bold text-text md:hidden"
+            @click="openChartFullscreen"
+          >
+            <svg class="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+              <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+              <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+            </svg>
+            Full Screen
+          </button>
         </div>
 
         <div v-if="chartPoints.length" class="rounded-[28px] border border-surface-outline bg-[linear-gradient(180deg,rgba(88,166,255,0.08)_0%,rgba(15,20,27,0.96)_100%)] p-4 md:p-5">
@@ -372,7 +395,7 @@ const closeSessionDetail = () => {
             </div>
             <div class="inline-flex items-center gap-2 text-sm text-text-soft">
               <span class="h-3 w-3 rounded-full bg-blue"></span>
-              Sets
+              Reps
             </div>
           </div>
 
@@ -405,20 +428,20 @@ const closeSessionDetail = () => {
 
               <text
                 v-for="tick in axisTicks"
-                :key="`sets-${tick.y}`"
+                :key="`reps-${tick.y}`"
                 :x="chartFrame.width - chartFrame.paddingRight + 12"
                 :y="tick.y + 4"
                 fill="rgba(240,246,252,0.62)"
                 font-size="11"
                 text-anchor="start"
               >
-                {{ tick.setLabel }}
+                {{ tick.repLabel }}
               </text>
             </g>
 
             <g>
               <path :d="weightPath" fill="none" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
-              <path :d="setPath" fill="none" stroke="var(--blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
+              <path :d="repPath" fill="none" stroke="var(--blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
             </g>
 
             <g>
@@ -427,9 +450,9 @@ const closeSessionDetail = () => {
                 <circle :cx="point.x" :cy="point.weightY" r="11" fill="rgba(57,211,83,0.12)" />
               </g>
 
-              <g v-for="point in chartPoints" :key="`set-point-${point.isoDate}`">
-                <circle :cx="point.x" :cy="point.setsY" r="6" fill="var(--blue)" />
-                <circle :cx="point.x" :cy="point.setsY" r="11" fill="rgba(88,166,255,0.12)" />
+              <g v-for="point in chartPoints" :key="`rep-point-${point.isoDate}`">
+                <circle :cx="point.x" :cy="point.repsY" r="6" fill="var(--blue)" />
+                <circle :cx="point.x" :cy="point.repsY" r="11" fill="rgba(88,166,255,0.12)" />
               </g>
             </g>
 
@@ -455,7 +478,7 @@ const closeSessionDetail = () => {
       </div>
     </SectionCard>
 
-    <SectionCard title="Session History" subtitle="Date, weight, and sets for the selected range.">
+    <SectionCard title="Session History" subtitle="Date, weight, and reps for the selected range.">
       <div v-if="filteredSessionHistory.length" class="flex flex-col gap-4">
         <div class="overflow-hidden rounded-[24px] border border-surface-outline bg-surface-soft">
           <div class="overflow-x-auto">
@@ -464,7 +487,7 @@ const closeSessionDetail = () => {
                 <tr class="border-b border-surface-outline bg-[rgba(255,255,255,0.03)] text-left">
                   <th class="px-4 py-3 text-[0.78rem] font-bold uppercase tracking-[0.12em] text-text-muted">Date</th>
                   <th class="px-4 py-3 text-[0.78rem] font-bold uppercase tracking-[0.12em] text-text-muted">Weight</th>
-                  <th class="px-4 py-3 text-[0.78rem] font-bold uppercase tracking-[0.12em] text-text-muted">Sets</th>
+                  <th class="px-4 py-3 text-[0.78rem] font-bold uppercase tracking-[0.12em] text-text-muted">Reps</th>
                   <th class="px-4 py-3 text-[0.78rem] font-bold uppercase tracking-[0.12em] text-text-muted">Detail</th>
                 </tr>
               </thead>
@@ -476,7 +499,7 @@ const closeSessionDetail = () => {
                 >
                   <td class="px-4 py-4 text-sm font-bold text-text">{{ session.date }}</td>
                   <td class="px-4 py-4 text-sm text-text-soft">{{ session.weight }} kg</td>
-                  <td class="px-4 py-4 text-sm text-text-soft">{{ session.sets }}</td>
+                  <td class="px-4 py-4 text-sm text-text-soft">{{ session.reps }}</td>
                   <td class="px-4 py-4 text-sm text-text-soft">
                     <button
                       type="button"
@@ -556,13 +579,116 @@ const closeSessionDetail = () => {
                 <p class="m-0 mt-2 text-lg font-bold text-text">{{ selectedSessionDetail.weight }} kg</p>
               </div>
               <div class="rounded-[18px] bg-[rgba(255,255,255,0.03)] p-3">
-                <p class="m-0 text-[0.75rem] uppercase tracking-[0.1em] text-text-muted">Sets</p>
-                <p class="m-0 mt-2 text-lg font-bold text-text">{{ selectedSessionDetail.sets }}</p>
+                <p class="m-0 text-[0.75rem] uppercase tracking-[0.1em] text-text-muted">Reps</p>
+                <p class="m-0 mt-2 text-lg font-bold text-text">{{ selectedSessionDetail.reps }}</p>
               </div>
             </div>
           </article>
         </div>
       </section>
+    </div>
+
+    <div v-if="isChartFullscreen" class="fixed inset-0 z-[1350] bg-black/80 backdrop-blur-sm md:hidden">
+      <div class="absolute left-1/2 top-1/2 h-[100dvw] w-[100dvh] -translate-x-1/2 -translate-y-1/2 rotate-90 p-4">
+        <div class="flex h-full flex-col rounded-[28px] border border-surface-outline bg-bg-elevated p-4 shadow-custom">
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-4">
+              <div class="inline-flex items-center gap-2 text-sm text-text-soft">
+                <span class="h-3 w-3 rounded-full bg-green"></span>
+                Weight
+              </div>
+              <div class="inline-flex items-center gap-2 text-sm text-text-soft">
+                <span class="h-3 w-3 rounded-full bg-blue"></span>
+                Reps
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <p class="m-0 text-right text-sm text-text-muted">{{ rangeSummary }}</p>
+              <button class="p-2 bg-transparent text-text-muted cursor-pointer border-0" @click="closeChartFullscreen">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="chartPoints.length" class="flex-1 overflow-hidden rounded-[24px] border border-surface-outline bg-[linear-gradient(180deg,rgba(88,166,255,0.08)_0%,rgba(15,20,27,0.96)_100%)] p-3">
+            <svg :viewBox="`0 0 ${chartFrame.width} ${chartFrame.height}`" class="h-full w-full overflow-visible">
+              <g>
+                <line
+                  v-for="tick in axisTicks"
+                  :key="`fullscreen-grid-${tick.y}`"
+                  :x1="chartFrame.paddingLeft"
+                  :x2="chartFrame.width - chartFrame.paddingRight"
+                  :y1="tick.y"
+                  :y2="tick.y"
+                  stroke="rgba(240,246,252,0.08)"
+                  stroke-dasharray="4 6"
+                />
+              </g>
+
+              <g>
+                <text
+                  v-for="tick in axisTicks"
+                  :key="`fullscreen-weight-${tick.y}`"
+                  :x="chartFrame.paddingLeft - 12"
+                  :y="tick.y + 4"
+                  fill="rgba(240,246,252,0.62)"
+                  font-size="11"
+                  text-anchor="end"
+                >
+                  {{ tick.weightLabel }}
+                </text>
+
+                <text
+                  v-for="tick in axisTicks"
+                  :key="`fullscreen-reps-${tick.y}`"
+                  :x="chartFrame.width - chartFrame.paddingRight + 12"
+                  :y="tick.y + 4"
+                  fill="rgba(240,246,252,0.62)"
+                  font-size="11"
+                  text-anchor="start"
+                >
+                  {{ tick.repLabel }}
+                </text>
+              </g>
+
+              <g>
+                <path :d="weightPath" fill="none" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
+                <path :d="repPath" fill="none" stroke="var(--blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
+              </g>
+
+              <g>
+                <g v-for="point in chartPoints" :key="`fullscreen-weight-point-${point.isoDate}`">
+                  <circle :cx="point.x" :cy="point.weightY" r="6" fill="var(--green)" />
+                  <circle :cx="point.x" :cy="point.weightY" r="11" fill="rgba(57,211,83,0.12)" />
+                </g>
+
+                <g v-for="point in chartPoints" :key="`fullscreen-rep-point-${point.isoDate}`">
+                  <circle :cx="point.x" :cy="point.repsY" r="6" fill="var(--blue)" />
+                  <circle :cx="point.x" :cy="point.repsY" r="11" fill="rgba(88,166,255,0.12)" />
+                </g>
+              </g>
+
+              <g>
+                <text
+                  v-for="point in chartPoints"
+                  :key="`fullscreen-label-${point.isoDate}`"
+                  :x="point.x"
+                  :y="chartFrame.height - 10"
+                  fill="rgba(240,246,252,0.62)"
+                  font-size="11"
+                  text-anchor="middle"
+                >
+                  {{ point.axisLabel }}
+                </text>
+              </g>
+            </svg>
+          </div>
+
+          <div v-else class="flex flex-1 items-center justify-center rounded-[24px] border border-surface-outline bg-surface-soft px-5 py-10 text-center text-text-muted">
+            No chart data in this date range.
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

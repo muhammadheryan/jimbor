@@ -8,7 +8,7 @@ import { loginData } from '../data/mockData'
   <div class="flex flex-col items-center justify-center gap-4 min-h-screen p-6 md:max-w-[50%] md:mx-auto">
     <section class="w-full p-6 border border-surface-outline rounded-[28px] bg-gradient-to-b from-[rgba(22,27,34,0.98)] to-[rgba(15,20,27,0.98)] shadow-custom">
       <p class="m-0 text-text-muted text-[0.78rem] tracking-[0.12em] uppercase">Gym tracker</p>
-      <h1 class="m-0 mt-2 font-black leading-[0.92] tracking-[0.04em] uppercase text-[clamp(3.4rem,10vw,5rem)] text-blue">JIMBOR</h1>
+      <h1 class="m-0 mt-2 font-black leading-[0.92] tracking-[0.04em] uppercase text-[clamp(3.4rem,10vw,5rem)] text-green">JIMBOR</h1>
       <h2 class="m-0 mt-4 font-black leading-[0.92] tracking-[0.04em] uppercase text-[clamp(2rem,6vw,3.5rem)] max-w-[12ch]">{{ loginData.title }}</h2>
     </section>
 
