@@ -234,7 +234,7 @@ function selectExercise(name) {
     </div>
 
     <!-- Exercise Selection Modal -->
-    <div v-if="isExerciseModalOpen" class="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" @click.self="isExerciseModalOpen = false">
+    <div v-if="isExerciseModalOpen" class="fixed inset-0 z-[1300] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" @click.self="isExerciseModalOpen = false">
       <section class="w-full max-w-[460px] max-h-[80vh] flex flex-col p-6 rounded-[28px] bg-bg-elevated border border-surface-outline shadow-custom">
         <div class="flex items-center justify-between mb-5">
           <h2 class="m-0 text-xl font-extrabold">Select Exercise</h2>
