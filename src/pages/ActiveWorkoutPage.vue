@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { activeWorkoutData, dashboardData } from '../data/mockData'
+import { activeWorkoutData, dashboardData, exerciseLibraryList } from '../data/mockData'
 import PageHero from '../components/PageHero.vue'
 import SectionCard from '../components/SectionCard.vue'
 
@@ -13,6 +13,34 @@ const splitName = computed(() => route.query.split || activeWorkoutData.session.
 const workoutQueue = ref(JSON.parse(JSON.stringify(activeWorkoutData.queue)))
 const selectedExerciseName = ref(workoutQueue.value[0]?.name ?? null)
 const isFlagMenuOpen = ref(false)
+
+const isExerciseModalOpen = ref(false)
+const searchQuery = ref('')
+const filteredExercises = computed(() => {
+  if (!searchQuery.value) return exerciseLibraryList
+  return exerciseLibraryList.filter(ex => 
+    ex.toLowerCase().includes(searchQuery.value.toLowerCase())
+  )
+})
+
+function openExerciseModal() {
+  searchQuery.value = ''
+  isExerciseModalOpen.value = true
+}
+
+function selectExerciseForQueue(name) {
+  const newExercise = {
+    name,
+    badge: 'new entry',
+    sets: [{ number: 1, weight: '', reps: '', notes: '' }],
+    history: [],
+    helper: 'Fill the first set to start logging this exercise.',
+  }
+
+  workoutQueue.value.push(newExercise)
+  selectedExerciseName.value = newExercise.name
+  isExerciseModalOpen.value = false
+}
 
 const isStartSplitDialogOpen = ref(false)
 const isQuickStartDialogOpen = ref(false)
@@ -163,7 +191,8 @@ function finishWorkout() {
               </svg>
             </button>
 
-            <div v-if="isFlagMenuOpen" class="absolute top-[calc(100%+8px)] right-0 sm:right-0 z-[100] min-w-[160px] p-2 rounded-[18px] bg-surface border border-surface-outline shadow-custom flex flex-col gap-1">
+            <div v-if="isFlagMenuOpen" class="fixed inset-0 z-40 bg-transparent" @click="isFlagMenuOpen = false"></div>
+            <div v-if="isFlagMenuOpen" class="absolute top-[calc(100%+8px)] right-0 sm:right-0 z-50 min-w-[160px] p-2 rounded-[18px] bg-surface border border-surface-outline shadow-custom flex flex-col gap-1">
               <button
                 v-for="flag in dayFlags"
                 :key="flag.label"
@@ -212,94 +241,105 @@ function finishWorkout() {
             </span>
           </button>
 
-          <div v-if="exercise.name === selectedExerciseName" class="p-[0_24px_24px_24px] flex flex-col gap-6">
-            <section v-if="exercise.history.length" class="bg-[rgba(13,17,23,0.6)] rounded-[20px] p-5 border border-surface-soft mt-1">
-              <div class="flex items-center justify-between gap-3 mb-4">
-                <h3 class="m-0 text-[1.05rem] font-bold text-text-soft">Recent history</h3>
-                <button class="p-0 bg-transparent text-blue font-bold cursor-pointer border-0" type="button" @click="openExerciseHistory(exercise.name)">Load more</button>
-              </div>
+          <div 
+            class="grid transition-[grid-template-rows] duration-300 ease-in-out"
+            :class="exercise.name === selectedExerciseName ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
+          >
+            <div class="overflow-hidden">
+              <div class="p-[0_24px_24px_24px] flex flex-col gap-6 pt-2">
+                <section v-if="exercise.history.length" class="bg-[rgba(13,17,23,0.6)] rounded-[20px] p-5 border border-surface-soft mt-1">
+                  <div class="flex items-center justify-between gap-3 mb-4">
+                    <h3 class="m-0 text-[1.05rem] font-bold text-text-soft">Recent history</h3>
+                    <button class="p-0 bg-transparent text-blue font-bold cursor-pointer border-0" type="button" @click="openExerciseHistory(exercise.name)">Load more</button>
+                  </div>
 
-              <div class="flex flex-col gap-3">
-                <div
-                  v-for="entry in exercise.history"
-                  :key="`${exercise.name}-${entry.date}-${entry.summary}`"
-                  class="flex items-center gap-4 text-sm"
-                >
-                  <span class="text-text-muted w-[60px] shrink-0">{{ entry.date }}</span>
-                  <strong class="flex-1 min-w-0 font-bold truncate">{{ entry.summary }}</strong>
-                  <span
-                    class="flex items-center justify-center w-6 h-6 shrink-0"
-                    :class="`text-${(historyFlagMap[entry.flag] ?? dayFlags[3]).tone}`"
-                    :aria-label="entry.flag"
-                    :title="entry.flag"
+                  <div class="flex flex-col gap-3">
+                    <div
+                      v-for="entry in exercise.history"
+                      :key="`${exercise.name}-${entry.date}-${entry.summary}`"
+                      class="flex items-center gap-4 text-sm"
+                    >
+                      <span class="text-text-muted w-[60px] shrink-0">{{ entry.date }}</span>
+                      <strong class="flex-1 min-w-0 font-bold truncate">{{ entry.summary }}</strong>
+                      <span
+                        class="flex items-center justify-center w-6 h-6 shrink-0"
+                        :class="`text-${(historyFlagMap[entry.flag] ?? dayFlags[3]).tone}`"
+                        :aria-label="entry.flag"
+                        :title="entry.flag"
+                      >
+                        <svg class="w-4 h-4 fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true">
+                          <path
+                            v-for="path in (historyFlagMap[entry.flag] ?? dayFlags[1]).paths"
+                            :key="path"
+                            :d="path"
+                          />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="flex flex-col gap-2">
+                  <div class="flex items-center text-text-muted text-[0.8rem] font-bold tracking-[0.08em] uppercase px-1 mb-2">
+                    <span class="w-[48px] text-center">Set</span>
+                    <span class="flex-1 text-center">Kg</span>
+                    <span class="flex-[0.8] text-center">Reps</span>
+                    <span class="flex-[1.2] pl-2">Notes</span>
+                  </div>
+
+                  <div
+                    v-for="set in exercise.sets"
+                    :key="`${exercise.name}-${set.number}`"
+                    class="flex items-center gap-2 sm:gap-3"
                   >
-                    <svg class="w-4 h-4 fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true">
-                      <path
-                        v-for="path in (historyFlagMap[entry.flag] ?? dayFlags[1]).paths"
-                        :key="path"
-                        :d="path"
+                    <span class="flex items-center justify-center w-[48px] h-[48px] shrink-0 rounded-xl bg-surface-soft text-[1.1rem] font-extrabold text-text-muted">{{ set.number }}</span>
+
+                    <label class="flex-1">
+                      <input
+                        v-model="set.weight"
+                        class="w-full h-[48px] px-3 sm:px-4 text-center border border-surface-outline rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
+                        type="text"
+                        inputmode="decimal"
+                        placeholder="kg"
                       />
-                    </svg>
-                  </span>
-                </div>
+                    </label>
+
+                    <label class="flex-[0.8]">
+                      <input
+                        v-model="set.reps"
+                        class="w-full h-[48px] px-3 sm:px-4 text-center border border-surface-outline rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
+                        type="text"
+                        inputmode="numeric"
+                        placeholder="reps"
+                      />
+                    </label>
+
+                    <label class="flex-[1.2]">
+                      <input
+                        v-model="set.notes"
+                        class="w-full h-[48px] px-3 sm:px-4 text-left border border-surface-outline rounded-xl bg-surface text-text outline-none focus:border-blue transition-colors"
+                        type="text"
+                        placeholder="notes"
+                      />
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between gap-4 mt-3 pt-4 border-t border-[rgba(240,246,252,0.04)]">
+                    <p class="text-text-muted text-[0.85rem] m-0 max-w-[200px] leading-snug">{{ exercise.helper }}</p>
+                    <button class="inline-flex items-center justify-center gap-2 min-h-[44px] px-[16px] py-[8px] rounded-[16px] font-bold cursor-pointer border-0 bg-gradient-to-b from-blue to-blue-strong text-bg shrink-0" type="button" @click="addSet(exercise.name)">+ Add Set</button>
+                  </div>
+                </section>
               </div>
-            </section>
-
-            <section class="flex flex-col gap-2">
-              <div class="flex items-center text-text-muted text-[0.8rem] font-bold tracking-[0.08em] uppercase px-1 mb-2">
-                <span class="w-[48px] text-center">Set</span>
-                <span class="flex-1 text-center">Kg</span>
-                <span class="flex-[0.8] text-center">Reps</span>
-                <span class="flex-[1.2] pl-2">Notes</span>
-              </div>
-
-              <div
-                v-for="set in exercise.sets"
-                :key="`${exercise.name}-${set.number}`"
-                class="flex items-center gap-2 sm:gap-3"
-              >
-                <span class="flex items-center justify-center w-[48px] h-[48px] shrink-0 rounded-xl bg-surface-soft text-[1.1rem] font-extrabold text-text-muted">{{ set.number }}</span>
-
-                <label class="flex-1">
-                  <input
-                    v-model="set.weight"
-                    class="w-full h-[48px] px-3 sm:px-4 text-center border border-surface-outline rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
-                    type="text"
-                    inputmode="decimal"
-                    placeholder="kg"
-                  />
-                </label>
-
-                <label class="flex-[0.8]">
-                  <input
-                    v-model="set.reps"
-                    class="w-full h-[48px] px-3 sm:px-4 text-center border border-surface-outline rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
-                    type="text"
-                    inputmode="numeric"
-                    placeholder="reps"
-                  />
-                </label>
-
-                <label class="flex-[1.2]">
-                  <input
-                    v-model="set.notes"
-                    class="w-full h-[48px] px-3 sm:px-4 text-left border border-surface-outline rounded-xl bg-surface text-text outline-none focus:border-blue transition-colors"
-                    type="text"
-                    placeholder="notes"
-                  />
-                </label>
-              </div>
-
-              <div class="flex items-center justify-between gap-4 mt-3 pt-4 border-t border-[rgba(240,246,252,0.04)]">
-                <p class="text-text-muted text-[0.85rem] m-0 max-w-[200px] leading-snug">{{ exercise.helper }}</p>
-                <button class="inline-flex items-center justify-center gap-2 min-h-[44px] px-[16px] py-[8px] rounded-[16px] font-bold cursor-pointer border-0 bg-gradient-to-b from-blue to-blue-strong text-bg shrink-0" type="button" @click="addSet(exercise.name)">+ Add Set</button>
-              </div>
-            </section>
+            </div>
           </div>
         </article>
       </section>
 
-      <button class="inline-flex items-center justify-center gap-2 min-h-[48px] px-[18px] w-full rounded-[18px] font-bold cursor-pointer border-0 bg-gradient-to-b from-blue to-blue-strong text-bg" type="button" @click="addExercise">
+      <button
+        class="inline-flex items-center justify-center gap-2 min-h-[56px] px-[24px] w-full rounded-[22px] font-bold cursor-pointer border-0 bg-[rgba(88,166,255,0.14)] text-blue hover:bg-[rgba(88,166,255,0.22)] transition-colors mt-2"
+        type="button"
+        @click="openExerciseModal"
+      >
         + Add Exercise
       </button>
 
@@ -365,6 +405,47 @@ function finishWorkout() {
         <div class="flex gap-3 mt-6">
           <button class="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-[18px] font-bold cursor-pointer border border-surface-outline bg-surface-soft text-text transition-colors hover:bg-surface-soft-hover" type="button" @click="closeQuickStartDialog">Cancel</button>
           <button class="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-[18px] font-bold cursor-pointer border-0 bg-gradient-to-b from-blue to-blue-strong text-bg transition-opacity active:opacity-80" type="button" @click="confirmQuickStart">Start Empty Workout</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- Exercise Selection Modal -->
+    <div v-if="isExerciseModalOpen" class="fixed inset-0 z-[1300] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" @click.self="isExerciseModalOpen = false">
+      <section class="w-full max-w-[460px] max-h-[80vh] flex flex-col p-6 rounded-[28px] bg-bg-elevated border border-surface-outline shadow-custom">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="m-0 text-xl font-extrabold">Add Exercise</h2>
+          <button class="p-2 bg-transparent text-text-muted cursor-pointer border-0" @click="isExerciseModalOpen = false">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="relative mb-4">
+          <input
+            v-model="searchQuery"
+            class="w-full h-[48px] pl-11 pr-4 rounded-xl bg-surface border border-surface-outline text-text font-medium outline-none focus:border-blue transition-colors"
+            placeholder="Search exercises..."
+            type="text"
+            autofocus
+          />
+          <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </div>
+
+        <div class="flex-1 overflow-y-auto pr-1 flex flex-col gap-2 [scrollbar-width:thin] [scrollbar-color:rgba(88,166,255,0.2)_transparent]">
+          <button
+            v-for="exercise in filteredExercises"
+            :key="exercise"
+            class="w-full text-left p-4 rounded-xl bg-surface-soft border border-surface-outline text-text font-bold hover:bg-surface-soft-hover hover:border-blue transition-colors cursor-pointer"
+            @click="selectExerciseForQueue(exercise)"
+          >
+            {{ exercise }}
+          </button>
+          
+          <div v-if="filteredExercises.length === 0" class="py-12 text-center text-text-muted">
+            <p>No results for "{{ searchQuery }}"</p>
+            <button class="mt-2 text-blue font-bold px-4 py-2 bg-blue/10 rounded-lg border-0 cursor-pointer" @click="selectExerciseForQueue(searchQuery)">
+               Add "{{ searchQuery }}" anyway
+            </button>
+          </div>
         </div>
       </section>
     </div>
