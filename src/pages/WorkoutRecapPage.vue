@@ -38,9 +38,8 @@ import { recapData } from '../data/mockData'
       </SectionCard>
     </div>
 
-    <div class="flex flex-wrap items-stretch justify-end gap-4 mt-2">
-      <RouterLink class="inline-flex items-center justify-center gap-2 min-h-[48px] px-[18px] rounded-[18px] font-bold cursor-pointer border border-surface-outline bg-surface-soft text-text" to="/history">View History</RouterLink>
-      <RouterLink class="inline-flex items-center justify-center gap-2 min-h-[48px] px-[18px] rounded-[18px] font-bold cursor-pointer border-0 bg-gradient-to-b from-blue to-blue-strong text-bg" to="/dashboard">Save & Go Home</RouterLink>
+    <div class="flex flex-col gap-4 mt-3">
+      <RouterLink class="inline-flex items-center justify-center gap-2 min-h-[56px] px-[18px] rounded-[22px] font-black text-[1.05rem] cursor-pointer border-0 bg-gradient-to-b from-blue to-blue-strong text-bg shadow-custom" to="/dashboard">Save & Go Home</RouterLink>
     </div>
   </div>
 </template>

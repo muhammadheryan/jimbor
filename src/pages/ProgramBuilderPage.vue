@@ -48,6 +48,11 @@ function openExerciseModal() {
 }
 
 function selectExercise(name) {
+  // Add to library if not exists
+  if (name && !exerciseLibraryList.some(ex => ex.toLowerCase() === name.toLowerCase())) {
+    exerciseLibraryList.push(name)
+  }
+
   if (selectedExercise.value) {
     selectedExercise.value.name = name
   }

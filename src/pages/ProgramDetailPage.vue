@@ -122,6 +122,9 @@ const moveExerciseDown = (splitIndex, exerciseIndex) => {
 }
 
 const addSplit = () => {
+  const hasEmptySplit = splits.value.some(s => s.exercises.length === 0)
+  if (hasEmptySplit) return
+
   splits.value.push({
     name: `New Split ${splits.value.length + 1}`,
     note: '',
@@ -153,22 +156,39 @@ const openExerciseModal = (sIndex, eIndex) => {
 }
 
 const selectExercise = (name) => {
-  if (targetSplitIndex.value > -1 && targetExerciseIndex.value > -1) {
-    splits.value[targetSplitIndex.value].exercises[targetExerciseIndex.value].name = name
+  // Add to library if not exists
+  if (name && !exerciseLibraryList.some(ex => ex.toLowerCase() === name.toLowerCase())) {
+    exerciseLibraryList.push(name)
+  }
+
+  if (targetSplitIndex.value > -1) {
+    if (targetExerciseIndex.value === -1) {
+      // New
+      splits.value[targetSplitIndex.value].exercises.push({
+        name,
+        sets: 3,
+        reps: '8-12',
+        rest: '90s',
+        target: ''
+      })
+    } else if (targetExerciseIndex.value > -1) {
+      // Update
+      splits.value[targetSplitIndex.value].exercises[targetExerciseIndex.value].name = name
+    }
   }
   isExerciseModalOpen.value = false
 }
 
+const validateRepsRange = (exercise) => {
+  if (exercise.reps && !exercise.reps.match(/^\d+-\d+$/)) {
+    // Just a visual hint usually, but we can do an alert if needed
+    console.warn('Invalid reps format')
+  }
+}
+
 const addExercise = (splitIndex) => {
-  splits.value[splitIndex].exercises.push({
-    name: '',
-    sets: 3,
-    meta: '', // optional mock fields
-    rest: '',
-    target: ''
-  })
-  // Auto open modal for the new exercise
-  openExerciseModal(splitIndex, splits.value[splitIndex].exercises.length - 1)
+  // Just open the modal with target -1
+  openExerciseModal(splitIndex, -1)
 }
 
 const removeExercise = (splitIndex, exerciseIndex) => {
@@ -226,14 +246,6 @@ const totalExercises = computed(() => splits.value.reduce((acc, split) => acc + 
 
     <!-- Section: Splits -->
     <SectionCard title="Splits & Exercises" subtitle="Drag to reorder splits or exercises within splits">
-      <template #header-actions>
-        <button class="inline-flex items-center justify-center w-9 h-9 border border-surface-outline bg-surface-soft text-text rounded-xl" type="button" @click="addSplit" title="Add Split">
-          <svg viewBox="0 0 24 24" class="w-5 h-5 fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </button>
-      </template>
 
       <div class="flex flex-col gap-3">
         <article
@@ -254,9 +266,13 @@ const totalExercises = computed(() => splits.value.reduce((acc, split) => acc + 
                 <label class="flex flex-col gap-2 rounded-[18px] bg-[rgba(88,166,255,0.15)] border border-[rgba(88,166,255,0.4)] min-h-[46px] overflow-hidden" style="flex: 1; width: 100%;">
                   <input class="w-full h-full px-[18px] py-3 bg-transparent text-[1.05rem] font-extrabold text-blue uppercase tracking-wider placeholder:text-[rgba(88,166,255,0.5)] placeholder:normal-case placeholder:tracking-normal placeholder:font-normal outline-none" v-model="split.name" type="text" placeholder="Split Name" />
                 </label>
-                <div class="flex items-center justify-end shrink-0 w-fit sm:min-w-[auto] gap-2">
-                  <button type="button" class="bg-transparent border-none text-text-muted cursor-pointer p-[2px_4px] text-[0.75rem] leading-none disabled:opacity-20 sm:hidden" @click.stop="moveSplitUp(sIndex)" :disabled="sIndex === 0">▲</button>
-                  <button type="button" class="bg-transparent border-none text-text-muted cursor-pointer p-[2px_4px] text-[0.75rem] leading-none disabled:opacity-20 sm:hidden" @click.stop="moveSplitDown(sIndex)" :disabled="sIndex === splits.length - 1">▼</button>
+                <div class="flex flex-col gap-1 shrink-0 ml-1">
+                  <button type="button" class="inline-flex items-center justify-center w-8 h-[22px] p-0 text-text-muted hover:text-blue bg-surface border border-surface-outline rounded-lg transition-colors disabled:opacity-20 cursor-pointer" :disabled="sIndex === 0" @click.stop="moveSplitUp(sIndex)">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                  </button>
+                  <button type="button" class="inline-flex items-center justify-center w-8 h-[22px] p-0 text-text-muted hover:text-blue bg-surface border border-surface-outline rounded-lg transition-colors disabled:opacity-20 cursor-pointer" :disabled="sIndex === splits.length - 1" @click.stop="moveSplitDown(sIndex)">
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
                 </div>
               </div>
 
@@ -288,51 +304,79 @@ const totalExercises = computed(() => splits.value.reduce((acc, split) => acc + 
             >
               <div class="cursor-grab text-text-muted text-[1.5rem] select-none p-2 active:cursor-grabbing max-sm:hidden" title="Drag to reorder exercise">≡</div>
               
-              <div class="flex-1 flex flex-col sm:flex-row gap-2 w-full">
-                <div class="flex items-center gap-2 w-full">
-                  <label class="flex flex-col gap-2" style="flex: 1">
-                    <div class="relative w-full">
-                      <input 
-                        class="w-full px-4 py-3 border border-surface-outline rounded-[18px] bg-surface-soft text-text outline-none cursor-pointer pr-10"
-                        type="text" 
-                        readonly
-                        :value="exercise.name" 
-                        placeholder="Select Exercise..." 
-                        @click="openExerciseModal(sIndex, eIndex)"
-                      />
-                      <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    </div>
-                  </label>
+              <div class="flex-1 flex flex-col sm:flex-row gap-3 w-full">
+                <!-- Name Column -->
+                <div class="flex items-center gap-2 w-full sm:flex-[1.5]">
+                  <div class="relative w-full">
+                    <input 
+                      class="w-full px-4 py-3 border border-surface-outline rounded-[18px] bg-surface-soft text-text outline-none cursor-pointer pr-10 font-bold"
+                      type="text" 
+                      readonly
+                      :value="exercise.name" 
+                      placeholder="Select Exercise..." 
+                      @click="openExerciseModal(sIndex, eIndex)"
+                    />
+                    <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                  </div>
+
+                  <button type="button" class="inline-flex items-center justify-center shrink-0 w-8 h-8 p-0 text-text-muted hover:text-danger rounded-lg transition-colors border-0 bg-transparent cursor-pointer" @click="removeExercise(sIndex, eIndex)">
+                    <svg class="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                      <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                  </button>
                 </div>
 
-                <div class="flex items-center gap-2 w-full justify-between">
-                  <label class="flex items-center gap-2 justify-between" style="width: 100px;">
+                <!-- Range/Sets Column -->
+                <div class="flex items-center gap-3 w-full sm:flex-1">
+                  <label class="flex items-center gap-2 shrink-0" style="width: 80px;">
                     <input 
-                      class="w-full px-3 py-3 border border-surface-outline rounded-[18px] bg-surface-soft text-text text-center pr-2 outline-none"
+                      class="w-full px-2 py-3 border border-surface-outline rounded-[18px] bg-surface-soft text-text text-center outline-none"
                       v-model="exercise.sets" 
                       type="number" 
                       min="1" 
                     />
-                    <span class="text-text-muted text-[0.8rem]">sets</span>
+                    <span class="text-text-muted text-[0.65rem] uppercase font-bold tracking-tighter">set</span>
                   </label>
-                  
-                  <div class="flex items-center justify-end shrink-0 w-fit sm:min-w-[auto] gap-2">
-                    <button type="button" class="bg-transparent border-none text-text-muted cursor-pointer p-[2px_4px] text-[0.75rem] leading-none disabled:opacity-20 sm:hidden" @click.stop="moveExerciseUp(sIndex, eIndex)" :disabled="eIndex === 0">▲</button>
-                    <button type="button" class="bg-transparent border-none text-text-muted cursor-pointer p-[2px_4px] text-[0.75rem] leading-none disabled:opacity-20 sm:hidden" @click.stop="moveExerciseDown(sIndex, eIndex)" :disabled="eIndex === split.exercises.length - 1">▼</button>
-                    
-                    <button type="button" class="inline-flex items-center justify-center shrink-0 w-10 h-10 p-0 text-text-muted hover:text-danger hover:border-[rgba(248,81,73,0.4)] border border-transparent bg-transparent transition-colors rounded-xl" @click="removeExercise(sIndex, eIndex)">
-                      <svg class="w-4 h-4 fill-none stroke-current stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
-                        <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      </svg>
-                    </button>
+
+                  <label class="flex-1 flex items-center gap-2 relative">
+                    <input 
+                      class="w-full px-3 py-3 border border-surface-outline rounded-[18px] bg-surface-soft text-text text-center outline-none transition-colors"
+                      :class="{ 'border-danger': exercise.reps && !exercise.reps.match(/^\d+-\d+$/) }"
+                      v-model="exercise.reps" 
+                      type="text" 
+                      placeholder="8-12"
+                      @blur="validateRepsRange(exercise)"
+                    />
+                    <span class="text-text-muted text-[0.65rem] uppercase font-bold tracking-tighter shrink-0">rep</span>
+                    <span v-if="exercise.reps && !exercise.reps.match(/^\d+-\d+$/)" class="absolute -bottom-4 left-2 text-[0.55rem] text-danger font-bold uppercase whitespace-nowrap">Err: 10-12</span>
+                  </label>
+
+                  <div class="flex items-center justify-end shrink-0 gap-1 ml-1">
+                    <div class="flex flex-col gap-0.5">
+                      <button type="button" class="inline-flex items-center justify-center w-7 h-[20px] p-0 text-text-muted hover:text-blue bg-surface-soft border border-surface-outline rounded-md transition-colors disabled:opacity-10 cursor-pointer" :disabled="eIndex === 0" @click.stop="moveExerciseUp(sIndex, eIndex)">
+                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                      </button>
+                      <button type="button" class="inline-flex items-center justify-center w-7 h-[20px] p-0 text-text-muted hover:text-blue bg-surface-soft border border-surface-outline rounded-md transition-colors disabled:opacity-10 cursor-pointer" :disabled="eIndex === split.exercises.length - 1" @click.stop="moveExerciseDown(sIndex, eIndex)">
+                        <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <button class="inline-flex items-center justify-center gap-2 self-start text-[0.85rem] px-3 min-h-[36px] mt-1 font-bold cursor-pointer rounded-xl border-0 bg-[rgba(88,166,255,0.14)] text-blue transition-colors hover:bg-[rgba(88,166,255,0.22)]" type="button" @click="addExercise(sIndex)">+ Add Exercise</button>
+            <button class="inline-flex items-center justify-center gap-2 self-start text-[0.85rem] px-4 min-h-[38px] mt-2 font-bold cursor-pointer rounded-[14px] border-0 bg-[rgba(88,166,255,0.12)] text-blue hover:bg-[rgba(88,166,255,0.18)] transition-colors" type="button" @click="addExercise(sIndex)">+ Add Exercise</button>
           </div>
         </article>
+
+        <button
+          class="inline-flex items-center justify-center gap-2 min-h-[56px] px-[24px] w-full rounded-[22px] font-bold cursor-pointer border-0 bg-[rgba(88,166,255,0.11)] text-blue hover:bg-[rgba(88,166,255,0.18)] transition-colors mt-2 disabled:opacity-30 disabled:cursor-not-allowed"
+          type="button"
+          :disabled="splits.some(s => s.exercises.length === 0)"
+          @click="addSplit"
+        >
+          + Add Split Target
+        </button>
       </div>
       
       <div class="flex flex-wrap items-stretch justify-end gap-4 mt-6 [&>*]:flex-1">

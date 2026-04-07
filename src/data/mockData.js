@@ -111,8 +111,6 @@ export const recapData = {
   summary: [
     { label: 'Total sets', value: '18' },
     { label: 'Total reps', value: '156' },
-    { label: 'Volume', value: '8,420 kg' },
-    { label: 'Heatmap score', value: 'Level 4' },
   ],
   prs: [
     { name: 'Bench Press', value: '65 x 8', note: 'Estimated one-rep max is trending up.' },
@@ -228,6 +226,10 @@ export const historyData = {
         { date: 'Apr 1', detail: '3x10 @ 60kg', flag: 'Normal' },
         { date: 'Mar 29', detail: '3x8 @ 57.5kg', flag: 'Normal' },
         { date: 'Mar 26', detail: '3x10 @ 57.5kg', flag: 'Tired' },
+        { date: 'Mar 22', detail: '3x10 @ 55kg', flag: 'Normal' },
+        { date: 'Mar 18', detail: '3x12 @ 52.5kg', flag: 'Fresh' },
+        { date: 'Mar 15', detail: '3x12 @ 52.5kg', flag: 'Normal' },
+        { date: 'Mar 11', detail: '3x10 @ 50kg', flag: 'Tired' },
       ],
     },
     {
@@ -239,6 +241,11 @@ export const historyData = {
         { date: 'Apr 3', detail: '4x10 @ 72.5kg', flag: 'Fresh' },
         { date: 'Mar 30', detail: '4x10 @ 70kg', flag: 'Fresh' },
         { date: 'Mar 27', detail: '4x12 @ 65kg', flag: 'Fresh' },
+        { date: 'Mar 23', detail: '4x12 @ 65kg', flag: 'Normal' },
+        { date: 'Mar 19', detail: '4x12 @ 62.5kg', flag: 'Fresh' },
+        { date: 'Mar 16', detail: '4x12 @ 60kg', flag: 'Normal' },
+        { date: 'Mar 12', detail: '4x10 @ 60kg', flag: 'Normal' },
+        { date: 'Mar 08', detail: '4x12 @ 55kg', flag: 'Tired' },
       ],
     },
     {
@@ -250,6 +257,11 @@ export const historyData = {
         { date: 'Apr 1', detail: '4x8 @ 140kg', flag: 'Tired' },
         { date: 'Mar 28', detail: '4x8 @ 135kg', flag: 'Fresh' },
         { date: 'Mar 24', detail: '4x10 @ 130kg', flag: 'Fresh' },
+        { date: 'Mar 20', detail: '4x10 @ 125kg', flag: 'Normal' },
+        { date: 'Mar 17', detail: '4x12 @ 120kg', flag: 'Normal' },
+        { date: 'Mar 13', detail: '4x12 @ 115kg', flag: 'Fresh' },
+        { date: 'Mar 09', detail: '4x12 @ 110kg', flag: 'Tired' },
+        { date: 'Mar 05', detail: '4x15 @ 100kg', flag: 'Normal' },
       ],
     },
   ],

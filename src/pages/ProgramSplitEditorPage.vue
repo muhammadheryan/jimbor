@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import PageHero from '../components/PageHero.vue'
 import SectionCard from '../components/SectionCard.vue'
@@ -19,20 +19,21 @@ const filteredExercises = computed(() => {
 })
 
 const isCreateMode = computed(() => route.path.endsWith('/new'))
-const selectedSplit = computed(() => {
-  if (isCreateMode.value) {
-    return {
-      name: '',
-      note: '',
-      exercises: [
-        { name: '', meta: '', rest: '', target: '' },
-        { name: '', meta: '', rest: '', target: '' },
-      ],
+const selectedSplit = ref({
+  name: '',
+  note: '',
+  exercises: [],
+})
+
+onMounted(() => {
+  if (!isCreateMode.value) {
+    const splitName = decodeURIComponent(route.params.splitName ?? '')
+    const found = programBuilderData.splits.find((split) => split.name.toLowerCase() === splitName.toLowerCase())
+    if (found) {
+      // Create a reactive copy so we don't modify the source mock data directly until save
+      selectedSplit.value = JSON.parse(JSON.stringify(found))
     }
   }
-
-  const splitName = decodeURIComponent(route.params.splitName ?? '')
-  return programBuilderData.splits.find((split) => split.name.toLowerCase() === splitName.toLowerCase()) ?? programBuilderData.splits[0]
 })
 
 function openExerciseModal(index) {
@@ -42,16 +43,49 @@ function openExerciseModal(index) {
 }
 
 function selectExercise(name) {
-  if (currentlyEditingExerciseIndex.value > -1 && selectedSplit.value) {
+  // Add to library if not exists
+  if (name && !exerciseLibraryList.some(ex => ex.toLowerCase() === name.toLowerCase())) {
+    exerciseLibraryList.push(name)
+  }
+
+  if (currentlyEditingExerciseIndex.value === -1) {
+    // Create new
+    selectedSplit.value.exercises.push({ name, sets: 3, reps: '8-12', rest: '', target: '' })
+  } else if (currentlyEditingExerciseIndex.value > -1) {
+    // Update existing
     selectedSplit.value.exercises[currentlyEditingExerciseIndex.value].name = name
   }
   isExerciseModalOpen.value = false
 }
 
+function validateRepsRange(exercise) {
+  if (exercise.reps && !exercise.reps.match(/^\d+-\d+$/)) {
+    alert('Reps target must be in format number-number (e.g. 10-12)')
+  }
+}
+
+function moveExerciseUp(index) {
+  if (index > 0) {
+    const temp = selectedSplit.value.exercises[index];
+    selectedSplit.value.exercises[index] = selectedSplit.value.exercises[index - 1];
+    selectedSplit.value.exercises[index - 1] = temp;
+  }
+}
+
+function moveExerciseDown(index) {
+  if (index < selectedSplit.value.exercises.length - 1) {
+    const temp = selectedSplit.value.exercises[index];
+    selectedSplit.value.exercises[index] = selectedSplit.value.exercises[index + 1];
+    selectedSplit.value.exercises[index + 1] = temp;
+  }
+}
+
+function removeExercise(index) {
+  selectedSplit.value.exercises.splice(index, 1)
+}
+
 function addExerciseRow() {
-  if (!selectedSplit.value) return
-  selectedSplit.value.exercises.push({ name: '', meta: '', rest: '', target: '' })
-  openExerciseModal(selectedSplit.value.exercises.length - 1)
+  openExerciseModal(-1)
 }
 </script>
 
@@ -99,10 +133,27 @@ function addExerciseRow() {
           class="builder-split builder-split--active"
         >
           <div class="builder-editor">
-            <div class="builder-editor__head">
+            <div class="builder-editor__head flex items-center justify-between">
               <div>
                 <p class="text-text-muted text-[0.78rem] tracking-[0.12em] uppercase m-0">Exercise {{ exerciseIndex + 1 }}</p>
                 <h3>{{ exercise.name || 'New Exercise' }}</h3>
+              </div>
+
+              <div class="flex items-center gap-1 ml-1">
+                <div class="flex flex-col gap-0.5">
+                  <button type="button" class="inline-flex items-center justify-center w-7 h-[20px] p-0 text-text-muted hover:text-blue bg-surface-soft border border-surface-outline rounded-md transition-colors disabled:opacity-10 cursor-pointer" :disabled="exerciseIndex === 0" @click.stop="moveExerciseUp(exerciseIndex)">
+                    <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                  </button>
+                  <button type="button" class="inline-flex items-center justify-center w-7 h-[20px] p-0 text-text-muted hover:text-blue bg-surface-soft border border-surface-outline rounded-md transition-colors disabled:opacity-10 cursor-pointer" :disabled="exerciseIndex === selectedSplit.exercises.length - 1" @click.stop="moveExerciseDown(exerciseIndex)">
+                    <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </button>
+                </div>
+
+                <button type="button" class="inline-flex items-center justify-center shrink-0 w-8 h-10 p-0 text-text-muted hover:text-danger rounded-xl transition-colors bg-transparent border-0 cursor-pointer" @click="removeExercise(exerciseIndex)">
+                  <svg class="w-4 h-4 fill-none stroke-current stroke-2" viewBox="0 0 24 24">
+                    <polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  </svg>
+                </button>
               </div>
             </div>
 
@@ -122,10 +173,27 @@ function addExerciseRow() {
                 </div>
               </label>
 
-              <label class="flex flex-col gap-2">
-                <span>Set and rep target</span>
-                <input :value="exercise.meta" type="text" placeholder="4 sets - 6-8 reps" />
-              </label>
+              <div class="flex gap-4">
+                <label class="flex flex-col gap-2 flex-1">
+                  <span>Sets</span>
+                  <input v-model="exercise.sets" type="number" placeholder="4" />
+                </label>
+
+                <label class="flex flex-col gap-2 flex-[1.5]">
+                  <span>Reps target</span>
+                  <div class="relative">
+                    <input 
+                      v-model="exercise.reps" 
+                      type="text" 
+                      placeholder="10-12"
+                      class="transition-colors"
+                      :class="{ 'border-danger': exercise.reps && !exercise.reps.match(/^\d+-\d+$/) }"
+                      @blur="validateRepsRange(exercise)"
+                    />
+                    <span v-if="exercise.reps && !exercise.reps.match(/^\d+-\d+$/)" class="absolute -bottom-5 left-0 text-[0.65rem] text-danger font-bold uppercase">Format: 10-12</span>
+                  </div>
+                </label>
+              </div>
 
               <div class="builder-editor__grid">
                 <label class="flex flex-col gap-2">
