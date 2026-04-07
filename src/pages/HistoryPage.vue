@@ -8,6 +8,13 @@ import { historyData } from '../data/mockData'
 
 const heatmapColors = ['var(--surface-soft)', '#0e4429', '#006d32', '#26a641', '#39d353']
 const chartPoints = ['18%', '30%', '42%', '60%', '75%', '92%']
+
+const statusStyles = {
+  Fresh: 'pill--success',
+  Normal: 'pill--primary',
+  Tired: 'pill--warning',
+  Sick: 'pill--danger',
+}
 </script>
 
 <template>
@@ -36,7 +43,7 @@ const chartPoints = ['18%', '30%', '42%', '60%', '75%', '92%']
               <h3>{{ workout.title }}</h3>
               <p>{{ workout.meta }}</p>
             </div>
-            <span class="inline-flex items-center gap-2 w-fit px-3 py-2 rounded-full bg-surface-soft text-text-muted text-[0.8rem] font-bold" :class="workout.flag === 'Fresh' ? 'pill--success' : 'pill--warning'">
+            <span class="inline-flex items-center gap-2 w-fit px-3 py-2 rounded-full bg-surface-soft text-text-muted text-[0.8rem] font-bold" :class="statusStyles[workout.flag] || 'pill--warning'">
               {{ workout.flag }}
             </span>
           </article>

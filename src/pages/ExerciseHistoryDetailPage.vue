@@ -12,6 +12,13 @@ const exerciseDetail = computed(
   () => historyData.exerciseLibrary.find((item) => item.name.toLowerCase() === exerciseName.value.toLowerCase()) ?? historyData.exerciseLibrary[0],
 )
 const chartPoints = ['24%', '42%', '56%', '78%']
+
+const statusStyles = {
+  Fresh: 'pill--success',
+  Normal: 'pill--primary',
+  Tired: 'pill--warning',
+  Sick: 'pill--danger',
+}
 </script>
 
 <template>
@@ -64,7 +71,7 @@ const chartPoints = ['24%', '42%', '56%', '78%']
             <p>{{ session.detail }}</p>
           </div>
 
-          <span class="inline-flex items-center gap-2 w-fit px-3 py-2 rounded-full bg-surface-soft text-text-muted text-[0.8rem] font-bold" :class="session.flag === 'Fresh' ? 'pill--success' : 'pill--warning'">
+          <span class="inline-flex items-center gap-2 w-fit px-3 py-2 rounded-full bg-surface-soft text-text-muted text-[0.8rem] font-bold" :class="statusStyles[session.flag] || 'pill--warning'">
             {{ session.flag }}
           </span>
         </article>

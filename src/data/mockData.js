@@ -23,8 +23,8 @@ export const dashboardData = {
   ],
   recentWorkouts: [
     { title: 'Apr 4 - PUSH', meta: '18 sets - 8,420 kg volume', flag: 'Fresh' },
-    { title: 'Apr 3 - PULL', meta: '16 sets - Bench and lats day', flag: 'Fresh' },
-    { title: 'Apr 1 - LEG', meta: '14 sets - Lower energy but done', flag: 'Tired' },
+    { title: 'Apr 3 - PULL', meta: '16 sets - Bench and lats day', flag: 'Normal' },
+    { title: 'Apr 1 - LEG', meta: '14 sets - lower energy but done', flag: 'Tired' },
   ],
 }
 
@@ -47,10 +47,10 @@ export const activeWorkoutData = {
       ],
       history: [
         { date: 'Apr 1', summary: '3x10 @ 60kg', flag: 'Fresh' },
-        { date: 'Mar 29', summary: '3x8 @ 57.5kg', flag: 'Fresh' },
+        { date: 'Mar 29', summary: '3x8 @ 57.5kg', flag: 'Normal' },
         { date: 'Mar 26', summary: '3x10 @ 57.5kg', flag: 'Tired' },
-        { date: 'Mar 24', summary: '3x10 @ 55kg', flag: 'Fresh' },
-        { date: 'Mar 22', summary: '3x8 @ 55kg', flag: 'Beast' },
+        { date: 'Mar 24', summary: '3x10 @ 55kg', flag: 'Tired' },
+        { date: 'Mar 22', summary: '3x8 @ 55kg', flag: 'Sick' },
       ],
       helper: 'Dual input: scroll picker or tap to type',
     },
@@ -225,8 +225,8 @@ export const historyData = {
       chartLabels: ['55x8', '57.5x10', '60x10', '65x8'],
       sessions: [
         { date: 'Apr 4', detail: '3x10 @ 60kg', flag: 'Fresh' },
-        { date: 'Apr 1', detail: '3x10 @ 60kg', flag: 'Fresh' },
-        { date: 'Mar 29', detail: '3x8 @ 57.5kg', flag: 'Fresh' },
+        { date: 'Apr 1', detail: '3x10 @ 60kg', flag: 'Normal' },
+        { date: 'Mar 29', detail: '3x8 @ 57.5kg', flag: 'Normal' },
         { date: 'Mar 26', detail: '3x10 @ 57.5kg', flag: 'Tired' },
       ],
     },

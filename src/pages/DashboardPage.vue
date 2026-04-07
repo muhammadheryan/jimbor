@@ -11,9 +11,9 @@ const heatmapColors = ['var(--surface-soft)', '#0e4429', '#006d32', '#26a641', '
 const isStartSplitDialogOpen = ref(false)
 const isQuickStartDialogOpen = ref(false)
 const workoutFlags = {
-  Fresh: {
-    tone: 'success',
-    paths: ['M12 4.5L14.2 9L19 9.7L15.5 13.1L16.3 18L12 15.7L7.7 18L8.5 13.1L5 9.7L9.8 9Z'],
+  Sick: {
+    tone: 'danger',
+    paths: ['M12 15h.01', 'M12 7v6', 'M10 3.5a2 2 0 1 1 4 0v1.5h-4z', 'M8 8a4 4 0 0 1 8 0v11a4 4 0 1 1-8 0z'],
   },
   Tired: {
     tone: 'warning',
@@ -21,7 +21,11 @@ const workoutFlags = {
   },
   Normal: {
     tone: 'primary',
-    paths: ['M12 6V18', 'M6 12H18'],
+    paths: ['M8 13C9 14.3 10.4 15 12 15C13.6 15 15 14.3 16 13', 'M9 9.5H9.01', 'M15 9.5H15.01', 'M5 12C5 8.13 8.13 5 12 5C15.87 5 19 8.13 19 12C19 15.87 15.87 19 12 19C8.13 19 5 15.87 5 12Z'],
+  },
+  Fresh: {
+    tone: 'success',
+    paths: ['M13 2L3 14h9l-1 8 10-12h-9l1-8z'],
   },
 }
 

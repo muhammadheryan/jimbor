@@ -69,16 +69,9 @@ const pageLabel = computed(() => navItems.find((item) => route.path.startsWith(i
     </aside>
 
     <div class="w-full min-w-0 px-4 pt-5 pb-[108px] lg:p-0 lg:pb-10">
-      <div class="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <p class="m-0 text-text-muted text-[0.78rem] tracking-[0.12em] uppercase">Jimbor app</p>
-          <p class="m-0 mt-1 text-[1.1rem] font-bold">{{ pageLabel }}</p>
-        </div>
-
-        <div class="hidden lg:flex gap-3">
-          <RouterLink class="inline-flex items-center justify-center gap-2 min-h-[48px] px-[18px] rounded-[18px] font-bold cursor-pointer border border-surface-outline bg-surface-soft text-text" to="/programs/split-selector">Split Selector</RouterLink>
-          <RouterLink class="inline-flex items-center justify-center gap-2 min-h-[48px] px-[18px] rounded-[18px] font-bold cursor-pointer bg-gradient-to-b from-blue to-blue-strong text-bg" to="/programs/builder">Program Builder</RouterLink>
-        </div>
+      <div class="hidden lg:flex items-start justify-end gap-3 mb-6">
+        <RouterLink class="inline-flex items-center justify-center gap-2 min-h-[48px] px-[18px] rounded-[18px] font-bold cursor-pointer border border-surface-outline bg-surface-soft text-text" to="/programs/split-selector">Split Selector</RouterLink>
+        <RouterLink class="inline-flex items-center justify-center gap-2 min-h-[48px] px-[18px] rounded-[18px] font-bold cursor-pointer bg-gradient-to-b from-blue to-blue-strong text-bg" to="/programs/builder">Program Builder</RouterLink>
       </div>
 
       <main class="w-full">
@@ -86,22 +79,33 @@ const pageLabel = computed(() => navItems.find((item) => route.path.startsWith(i
       </main>
     </div>
 
-    <nav class="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-2 py-4 pb-[calc(16px+env(safe-area-inset-bottom))] bg-bg-elevated border-t border-surface-outline lg:hidden">
+    <nav class="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))] bg-[rgba(13,17,23,0.85)] backdrop-blur-xl border-t border-surface-outline lg:hidden">
       <RouterLink
         v-for="item in mobileItems"
         :key="item.to"
         :to="item.to"
-        class="flex flex-col items-center gap-1 p-2 text-text-muted transition-colors rounded-xl"
+        class="relative flex flex-col items-center justify-center min-w-[64px] h-12 text-text-muted transition-all duration-300"
         :class="{ 'text-blue': route.path.startsWith(item.to) }"
       >
-        <svg class="w-6 h-6 fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round">
+        <div 
+          class="absolute inset-0 scale-90 opacity-0 transition-all duration-300 rounded-2xl bg-[rgba(88,166,255,0.12)]"
+          :class="{ 'scale-100 opacity-100': route.path.startsWith(item.to) }"
+        ></div>
+        
+        <svg class="relative z-10 w-6 h-6 fill-none stroke-current stroke-[2.2]" viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round" stroke-linejoin="round">
           <path
             v-for="path in item.icon"
             :key="path"
             :d="path"
           />
         </svg>
-        <span class="sr-only opacity-0 absolute w-px h-px overflow-hidden">{{ item.label }}</span>
+        
+        <div 
+          class="absolute -bottom-1.5 w-1 h-1 rounded-full bg-blue transition-all duration-300 scale-0"
+          :class="{ 'scale-100': route.path.startsWith(item.to) }"
+        ></div>
+        
+        <span class="sr-only">{{ item.label }}</span>
       </RouterLink>
     </nav>
   </div>

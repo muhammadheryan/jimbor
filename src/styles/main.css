@@ -235,9 +235,41 @@ textarea {
 
 .tag-row,
 .status-pills {
+  display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  gap: 12px;
 }
+
+.pill--success {
+  background: rgba(57, 211, 83, 0.14) !important;
+  color: var(--green) !important;
+}
+
+.pill--warning {
+  background: rgba(210, 153, 34, 0.14) !important;
+  color: var(--yellow) !important;
+}
+
+.pill--danger {
+  background: rgba(248, 81, 73, 0.14) !important;
+  color: var(--danger) !important;
+}
+
+.pill--primary {
+  background: rgba(88, 166, 255, 0.14) !important;
+  color: var(--blue) !important;
+}
+
+.text-success { color: var(--green) !important; }
+.text-warning { color: var(--yellow) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-primary { color: var(--blue) !important; }
+
+.bg-success-soft { background: rgba(57, 211, 83, 0.14) !important; }
+.bg-warning-soft { background: rgba(210, 153, 34, 0.14) !important; }
+.bg-danger-soft { background: rgba(248, 81, 73, 0.14) !important; }
+.bg-primary-soft { background: rgba(88, 166, 255, 0.14) !important; }
 
 
 
