@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import PageHero from '../components/PageHero.vue'
 import SectionCard from '../components/SectionCard.vue'
@@ -32,7 +32,7 @@ const statusStyles = {
 
 const chartFrame = {
   width: 760,
-  height: 320,
+  height: 380,
   paddingTop: 20,
   paddingRight: 56,
   paddingBottom: 44,
@@ -338,6 +338,17 @@ const closeChartFullscreen = () => {
   isChartFullscreen.value = false
 }
 
+const setFullscreenScrollLock = (locked) => {
+  if (typeof document === 'undefined') {
+    return
+  }
+
+  document.documentElement.style.overflow = locked ? 'hidden' : ''
+  document.documentElement.style.overscrollBehavior = locked ? 'none' : ''
+  document.body.style.overflow = locked ? 'hidden' : ''
+  document.body.style.overscrollBehavior = locked ? 'none' : ''
+}
+
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 
 const updateChartPointFromPointer = (event) => {
@@ -376,6 +387,29 @@ const endChartScrub = (event) => {
 
   isChartScrubbing.value = false
 }
+
+const getChartTooltipStyle = (point, maxWidth = 196, sidePadding = 12) => {
+  if (!point) {
+    return {}
+  }
+
+  const safeX = clamp(point.x, sidePadding + maxWidth / 2, chartFrame.width - sidePadding - maxWidth / 2)
+
+  return {
+    left: `${(safeX / chartFrame.width) * 100}%`,
+    top: `${chartFrame.paddingTop + 12}px`,
+    width: `min(${maxWidth}px, calc(100% - ${sidePadding * 2}px))`,
+    transform: 'translateX(-50%)',
+  }
+}
+
+watch(isChartFullscreen, (isOpen) => {
+  setFullscreenScrollLock(isOpen)
+})
+
+onBeforeUnmount(() => {
+  setFullscreenScrollLock(false)
+})
 </script>
 
 <template>
@@ -435,7 +469,7 @@ const endChartScrub = (event) => {
       </article>
     </div> -->
 
-    <SectionCard title="Progress Chart" subtitle="Weight and reps by training date.">
+    <SectionCard title="Progress Chart" subtitle="Weight and reps by training date." class="p-4 md:p-5">
       <div class="flex flex-col gap-5">
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0 flex-1">
@@ -457,7 +491,7 @@ const endChartScrub = (event) => {
           </button>
         </div>
 
-        <div v-if="chartPoints.length" class="rounded-[28px] border border-surface-outline bg-[linear-gradient(180deg,rgba(88,166,255,0.08)_0%,rgba(15,20,27,0.96)_100%)] p-4 md:p-5">
+        <div v-if="chartPoints.length" class="-mx-1 rounded-[28px] border border-surface-outline bg-[linear-gradient(180deg,rgba(88,166,255,0.08)_0%,rgba(15,20,27,0.96)_100%)] p-3 md:p-4">
           <div class="mb-4 flex flex-wrap items-center gap-4">
             <div class="inline-flex items-center gap-2 text-sm text-text-soft">
               <span class="h-3 w-3 rounded-full bg-green"></span>
@@ -469,129 +503,133 @@ const endChartScrub = (event) => {
             </div>
           </div>
 
-          <div v-if="activeChartPoint" class="mb-4 grid gap-3 md:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,0.8fr))]">
-            <div class="rounded-[22px] border border-[rgba(88,166,255,0.18)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
-              <p class="m-0 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-text-muted">Selected Session</p>
-              <p class="m-0 mt-2 text-base font-extrabold text-text">{{ activeChartPoint.date }}</p>
-              <p class="m-0 mt-1 text-sm leading-[1.5] text-text-soft">{{ activeChartPoint.detail }}</p>
+          <div class="relative">
+            <div
+              v-if="activeChartPoint"
+              class="pointer-events-none absolute z-10 rounded-[16px] border border-[rgba(15,23,42,0.1)] bg-white/95 px-2.5 py-2 text-slate-900 shadow-[0_14px_26px_rgba(15,23,42,0.16)] backdrop-blur-sm md:rounded-[18px] md:px-3 md:py-2.5 md:shadow-[0_16px_30px_rgba(15,23,42,0.18)]"
+              :style="getChartTooltipStyle(activeChartPoint, 116, 10)"
+            >
+              <p class="m-0 hidden text-[0.6rem] font-bold uppercase tracking-[0.12em] text-slate-500 md:block">Selected Session</p>
+              <p class="m-0 text-[0.7rem] font-extrabold md:mt-1 md:text-[0.82rem]">{{ activeChartPoint.date }}</p>
+              <p class="m-0 mt-0.5 hidden text-[0.68rem] leading-[1.3] text-slate-600 md:block md:text-[0.72rem] md:leading-[1.35]">{{ activeChartPoint.detail }}</p>
+              <div class="mt-1.5 flex items-center gap-2 md:gap-3">
+                <div>
+                  <p class="m-0 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-slate-400">Weight</p>
+                  <p class="m-0 mt-0.5 text-[0.82rem] font-black text-green md:text-[1.05rem]">{{ activeChartPoint.weight }} kg</p>
+                </div>
+                <div>
+                  <p class="m-0 text-[0.58rem] font-bold uppercase tracking-[0.12em] text-slate-400">Reps</p>
+                  <p class="m-0 mt-0.5 text-[0.82rem] font-black text-blue md:text-[1.05rem]">{{ activeChartPoint.reps }}</p>
+                </div>
+              </div>
             </div>
-            <div class="rounded-[22px] border border-[rgba(57,211,83,0.18)] bg-[rgba(57,211,83,0.08)] px-4 py-3">
-              <p class="m-0 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-text-muted">Weight</p>
-              <p class="m-0 mt-2 text-2xl font-black text-green">{{ activeChartPoint.weight }} kg</p>
-            </div>
-            <div class="rounded-[22px] border border-[rgba(88,166,255,0.18)] bg-[rgba(88,166,255,0.08)] px-4 py-3">
-              <p class="m-0 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-text-muted">Reps</p>
-              <p class="m-0 mt-2 text-2xl font-black text-blue">{{ activeChartPoint.reps }}</p>
-            </div>
+
+            <svg :viewBox="`0 0 ${chartFrame.width} ${chartFrame.height}`" class="w-full overflow-visible">
+              <g>
+                <line
+                  v-for="tick in axisTicks"
+                  :key="`grid-${tick.y}`"
+                  :x1="chartFrame.paddingLeft"
+                  :x2="chartFrame.width - chartFrame.paddingRight"
+                  :y1="tick.y"
+                  :y2="tick.y"
+                  stroke="rgba(240,246,252,0.08)"
+                  stroke-dasharray="4 6"
+                />
+              </g>
+
+              <g>
+                <text
+                  v-for="tick in axisTicks"
+                  :key="`weight-${tick.y}`"
+                  :x="chartFrame.paddingLeft - 12"
+                  :y="tick.y + 4"
+                  fill="rgba(240,246,252,0.62)"
+                  font-size="11"
+                  text-anchor="end"
+                >
+                  {{ tick.weightLabel }}
+                </text>
+
+                <text
+                  v-for="tick in axisTicks"
+                  :key="`reps-${tick.y}`"
+                  :x="chartFrame.width - chartFrame.paddingRight + 12"
+                  :y="tick.y + 4"
+                  fill="rgba(240,246,252,0.62)"
+                  font-size="11"
+                  text-anchor="start"
+                >
+                  {{ tick.repLabel }}
+                </text>
+              </g>
+
+              <g>
+                <path :d="weightPath" fill="none" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
+                <path :d="repPath" fill="none" stroke="var(--blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
+              </g>
+
+              <g v-if="activeChartPoint">
+                <line
+                  :x1="activeChartPoint.x"
+                  :x2="activeChartPoint.x"
+                  :y1="chartFrame.paddingTop"
+                  :y2="chartFrame.height - chartFrame.paddingBottom"
+                  stroke="rgba(88,166,255,0.72)"
+                  stroke-width="2"
+                  stroke-dasharray="6 6"
+                />
+                <circle
+                  :cx="activeChartPoint.x"
+                  :cy="chartFrame.height - chartFrame.paddingBottom"
+                  r="9"
+                  fill="rgba(88,166,255,0.22)"
+                  stroke="var(--blue)"
+                  stroke-width="2"
+                />
+              </g>
+
+              <g>
+                <g v-for="point in chartPoints" :key="`weight-point-${point.isoDate}`">
+                  <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--green)" />
+                  <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(57,211,83,0.12)" />
+                </g>
+
+                <g v-for="point in chartPoints" :key="`rep-point-${point.isoDate}`">
+                  <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--blue)" />
+                  <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(88,166,255,0.12)" />
+                </g>
+              </g>
+
+              <g>
+                <text
+                  v-for="point in chartPoints"
+                  :key="`label-${point.isoDate}`"
+                  :x="point.x"
+                  :y="chartFrame.height - 10"
+                  :fill="activeChartPoint?.isoDate === point.isoDate ? 'rgba(240,246,252,0.92)' : 'rgba(240,246,252,0.62)'"
+                  font-size="11"
+                  text-anchor="middle"
+                  :font-weight="activeChartPoint?.isoDate === point.isoDate ? '700' : '500'"
+                >
+                  {{ point.axisLabel }}
+                </text>
+              </g>
+
+              <rect
+                :x="chartFrame.paddingLeft"
+                :y="chartFrame.paddingTop"
+                :width="plotWidth"
+                :height="plotHeight"
+                fill="transparent"
+                class="cursor-ew-resize touch-none"
+                @pointerdown="beginChartScrub"
+                @pointermove="handleChartScrubMove"
+                @pointerup="endChartScrub"
+                @pointercancel="endChartScrub"
+              />
+            </svg>
           </div>
-
-          <p class="mb-4 text-sm text-text-muted">Geser garis vertikal di chart untuk melihat detail tiap sesi.</p>
-
-          <svg :viewBox="`0 0 ${chartFrame.width} ${chartFrame.height}`" class="w-full overflow-visible">
-            <g>
-              <line
-                v-for="tick in axisTicks"
-                :key="`grid-${tick.y}`"
-                :x1="chartFrame.paddingLeft"
-                :x2="chartFrame.width - chartFrame.paddingRight"
-                :y1="tick.y"
-                :y2="tick.y"
-                stroke="rgba(240,246,252,0.08)"
-                stroke-dasharray="4 6"
-              />
-            </g>
-
-            <g>
-              <text
-                v-for="tick in axisTicks"
-                :key="`weight-${tick.y}`"
-                :x="chartFrame.paddingLeft - 12"
-                :y="tick.y + 4"
-                fill="rgba(240,246,252,0.62)"
-                font-size="11"
-                text-anchor="end"
-              >
-                {{ tick.weightLabel }}
-              </text>
-
-              <text
-                v-for="tick in axisTicks"
-                :key="`reps-${tick.y}`"
-                :x="chartFrame.width - chartFrame.paddingRight + 12"
-                :y="tick.y + 4"
-                fill="rgba(240,246,252,0.62)"
-                font-size="11"
-                text-anchor="start"
-              >
-                {{ tick.repLabel }}
-              </text>
-            </g>
-
-            <g>
-              <path :d="weightPath" fill="none" stroke="var(--green)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
-              <path :d="repPath" fill="none" stroke="var(--blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
-            </g>
-
-            <g v-if="activeChartPoint">
-              <line
-                :x1="activeChartPoint.x"
-                :x2="activeChartPoint.x"
-                :y1="chartFrame.paddingTop"
-                :y2="chartFrame.height - chartFrame.paddingBottom"
-                stroke="rgba(88,166,255,0.72)"
-                stroke-width="2"
-                stroke-dasharray="6 6"
-              />
-              <circle
-                :cx="activeChartPoint.x"
-                :cy="chartFrame.height - chartFrame.paddingBottom"
-                r="9"
-                fill="rgba(88,166,255,0.22)"
-                stroke="var(--blue)"
-                stroke-width="2"
-              />
-            </g>
-
-            <g>
-              <g v-for="point in chartPoints" :key="`weight-point-${point.isoDate}`">
-                <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--green)" />
-                <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(57,211,83,0.12)" />
-              </g>
-
-              <g v-for="point in chartPoints" :key="`rep-point-${point.isoDate}`">
-                <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--blue)" />
-                <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(88,166,255,0.12)" />
-              </g>
-            </g>
-
-            <g>
-              <text
-                v-for="point in chartPoints"
-                :key="`label-${point.isoDate}`"
-                :x="point.x"
-                :y="chartFrame.height - 10"
-                :fill="activeChartPoint?.isoDate === point.isoDate ? 'rgba(240,246,252,0.92)' : 'rgba(240,246,252,0.62)'"
-                font-size="11"
-                text-anchor="middle"
-                :font-weight="activeChartPoint?.isoDate === point.isoDate ? '700' : '500'"
-              >
-                {{ point.axisLabel }}
-              </text>
-            </g>
-
-            <rect
-              :x="chartFrame.paddingLeft"
-              :y="chartFrame.paddingTop"
-              :width="plotWidth"
-              :height="plotHeight"
-              fill="transparent"
-              class="cursor-ew-resize touch-none"
-              @pointerdown="beginChartScrub"
-              @pointermove="handleChartScrubMove"
-              @pointerup="endChartScrub"
-              @pointercancel="endChartScrub"
-            />
-          </svg>
         </div>
 
         <div v-else class="rounded-[24px] border border-surface-outline bg-surface-soft px-5 py-10 text-center text-text-muted">
@@ -710,9 +748,13 @@ const endChartScrub = (event) => {
       </section>
     </div>
 
-    <div v-if="isChartFullscreen" class="fixed inset-0 z-[1350] bg-black/80 backdrop-blur-sm md:hidden">
-      <div class="absolute left-1/2 top-1/2 h-[100dvw] w-[100dvh] -translate-x-1/2 -translate-y-1/2 rotate-90 p-4">
-        <div class="flex h-full flex-col rounded-[28px] border border-surface-outline bg-bg-elevated p-4 shadow-custom">
+    <div v-if="isChartFullscreen" class="fixed inset-0 z-[1350] overflow-hidden overscroll-none bg-black/80 backdrop-blur-sm md:hidden">
+      <div class="absolute inset-0 overflow-hidden overscroll-none touch-none">
+        <div
+          class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rotate-90 origin-center overflow-hidden"
+          :style="{ width: 'calc(100dvh - 24px)', height: 'calc(100dvw - 24px)' }"
+        >
+          <div class="flex h-full w-full flex-col overflow-hidden rounded-[24px] border border-surface-outline bg-bg-elevated p-3 shadow-custom">
           <div class="mb-4 flex items-center justify-between gap-4">
             <div class="flex flex-wrap items-center gap-4">
               <div class="inline-flex items-center gap-2 text-sm text-text-soft">
@@ -732,24 +774,27 @@ const endChartScrub = (event) => {
             </div>
           </div>
 
-          <div v-if="chartPoints.length" class="flex-1 overflow-hidden rounded-[24px] border border-surface-outline bg-[linear-gradient(180deg,rgba(88,166,255,0.08)_0%,rgba(15,20,27,0.96)_100%)] p-3">
-            <div v-if="activeChartPoint" class="mb-3 grid gap-3 grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,0.8fr))]">
-              <div class="rounded-[20px] border border-[rgba(88,166,255,0.18)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5">
-                <p class="m-0 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-text-muted">Selected Session</p>
-                <p class="m-0 mt-1.5 text-sm font-extrabold text-text">{{ activeChartPoint.date }}</p>
-                <p class="m-0 mt-1 text-[0.78rem] leading-[1.4] text-text-soft">{{ activeChartPoint.detail }}</p>
+          <div v-if="chartPoints.length" class="min-h-0 flex-1 overflow-hidden rounded-[24px] border border-surface-outline bg-[linear-gradient(180deg,rgba(88,166,255,0.08)_0%,rgba(15,20,27,0.96)_100%)] p-3">
+            <div class="relative h-full overflow-hidden">
+              <div
+                v-if="activeChartPoint"
+                class="pointer-events-none absolute z-10 rounded-[16px] border border-[rgba(15,23,42,0.1)] bg-white/95 px-3 py-2 text-slate-900 shadow-[0_16px_30px_rgba(15,23,42,0.18)] backdrop-blur-sm"
+                :style="getChartTooltipStyle(activeChartPoint, 112, 10)"
+              >
+                <p class="m-0 text-[0.68rem] font-extrabold">{{ activeChartPoint.date }}</p>
+                <div class="mt-1.5 flex items-center gap-2">
+                  <div>
+                    <p class="m-0 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-slate-400">Weight</p>
+                    <p class="m-0 mt-0.5 text-[0.8rem] font-black text-green">{{ activeChartPoint.weight }} kg</p>
+                  </div>
+                  <div>
+                    <p class="m-0 text-[0.56rem] font-bold uppercase tracking-[0.12em] text-slate-400">Reps</p>
+                    <p class="m-0 mt-0.5 text-[0.8rem] font-black text-blue">{{ activeChartPoint.reps }}</p>
+                  </div>
+                </div>
               </div>
-              <div class="rounded-[20px] border border-[rgba(57,211,83,0.18)] bg-[rgba(57,211,83,0.08)] px-3 py-2.5">
-                <p class="m-0 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-text-muted">Weight</p>
-                <p class="m-0 mt-1.5 text-xl font-black text-green">{{ activeChartPoint.weight }} kg</p>
-              </div>
-              <div class="rounded-[20px] border border-[rgba(88,166,255,0.18)] bg-[rgba(88,166,255,0.08)] px-3 py-2.5">
-                <p class="m-0 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-text-muted">Reps</p>
-                <p class="m-0 mt-1.5 text-xl font-black text-blue">{{ activeChartPoint.reps }}</p>
-              </div>
-            </div>
 
-            <svg :viewBox="`0 0 ${chartFrame.width} ${chartFrame.height}`" class="h-full w-full overflow-visible">
+              <svg :viewBox="`0 0 ${chartFrame.width} ${chartFrame.height}`" class="h-full w-full overflow-hidden">
               <g>
                 <line
                   v-for="tick in axisTicks"
@@ -853,12 +898,14 @@ const endChartScrub = (event) => {
                 @pointerup="endChartScrub"
                 @pointercancel="endChartScrub"
               />
-            </svg>
+              </svg>
+            </div>
           </div>
 
           <div v-else class="flex flex-1 items-center justify-center rounded-[24px] border border-surface-outline bg-surface-soft px-5 py-10 text-center text-text-muted">
             No chart data in this date range.
           </div>
+        </div>
         </div>
       </div>
     </div>

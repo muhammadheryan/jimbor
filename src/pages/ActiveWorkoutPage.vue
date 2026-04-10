@@ -402,27 +402,27 @@ function openHistoryModal(exercise) {
             <div class="overflow-hidden">
               <div class="p-[0_24px_24px_24px] flex flex-col gap-6 pt-2">
                 <section class="flex flex-col gap-2 pt-2">
-                  <div v-if="exercise.sets.length" class="flex items-center gap-2 sm:gap-3 text-text-muted text-[0.8rem] font-bold tracking-[0.08em] uppercase px-1 mb-2">
-                    <span class="w-[48px] text-center">Set</span>
+                  <div v-if="exercise.sets.length" class="flex items-center gap-1.5 sm:gap-3 text-text-muted text-[0.76rem] sm:text-[0.8rem] font-bold tracking-[0.08em] uppercase px-1 mb-2">
+                    <span class="w-[34px] sm:w-[48px] text-center">Set</span>
                     <button class="flex-1 text-center bg-transparent border-0 text-text-muted font-bold cursor-pointer hover:text-blue transition-colors group flex items-center justify-center gap-1" @click="toggleUnit">
                       {{ weightUnit }}
                       <svg class="w-3 h-3 opacity-40 group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>
                     </button>
                     <span class="flex-[0.8] text-center">Reps</span>
-                    <span class="w-[96px] text-center">Actions</span>
+                    <span class="w-[72px] sm:w-[96px] text-center">Actions</span>
                   </div>
 
                   <div
                     v-for="set in exercise.sets"
                     :key="`${exercise.name}-${set.number}`"
-                    class="flex items-center gap-2 sm:gap-3"
+                    class="flex items-center gap-1.5 sm:gap-3"
                   >
-                    <span class="flex items-center justify-center w-[48px] h-[48px] shrink-0 rounded-xl bg-surface-soft text-[1.1rem] font-extrabold text-text-muted">{{ set.number }}</span>
+                    <span class="flex items-center justify-center w-[34px] h-[42px] sm:w-[48px] sm:h-[48px] shrink-0 rounded-lg sm:rounded-xl bg-surface-soft text-[0.92rem] sm:text-[1.1rem] font-extrabold text-text-muted">{{ set.number }}</span>
 
                     <label class="flex-1">
                       <input
                         :value="set.weight"
-                        class="w-full h-[48px] px-3 sm:px-4 text-center border border-surface-outline rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
+                        class="w-full h-[42px] sm:h-[48px] px-2.5 sm:px-4 text-center border border-surface-outline rounded-lg sm:rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
                         type="text"
                         inputmode="decimal"
                         :placeholder="weightUnit"
@@ -433,7 +433,7 @@ function openHistoryModal(exercise) {
                     <label class="flex-[0.8]">
                       <input
                         :value="set.reps"
-                        class="w-full h-[48px] px-3 sm:px-4 text-center border border-surface-outline rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
+                        class="w-full h-[42px] sm:h-[48px] px-2.5 sm:px-4 text-center border border-surface-outline rounded-lg sm:rounded-xl bg-surface text-text font-bold outline-none focus:border-blue transition-colors"
                         type="text"
                         inputmode="numeric"
                         placeholder="reps"
@@ -441,24 +441,24 @@ function openHistoryModal(exercise) {
                       />
                     </label>
 
-                    <div class="flex items-center justify-center gap-2 w-[96px] shrink-0">
+                    <div class="flex items-center justify-center gap-1 w-[72px] sm:w-[96px] shrink-0">
                       <button
-                        class="relative flex items-center justify-center w-[42px] h-[42px] rounded-xl border border-surface-outline bg-surface-soft text-text-muted transition-colors hover:bg-surface-soft-hover hover:text-text shrink-0"
+                        class="relative flex items-center justify-center w-[34px] h-[34px] sm:w-[42px] sm:h-[42px] rounded-lg sm:rounded-xl border border-surface-outline bg-surface-soft text-text-muted transition-colors hover:bg-surface-soft-hover hover:text-text shrink-0"
                         :class="{ '!border-blue !bg-blue/10 !text-blue': set.notes }"
                         type="button"
                         title="Set notes"
                         :aria-label="`Open notes for ${exercise.name} set ${set.number}`"
                         @click.stop="openNoteModal(exercise, set)"
                       >
-                        <svg class="w-4 h-4 stroke-current fill-none stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-current fill-none stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
                           <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                         </svg>
-                        <span v-if="set.notes" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue rounded-full border border-bg"></span>
+                        <span v-if="set.notes" class="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue rounded-full border border-bg"></span>
                       </button>
 
                       <button
                         v-if="isCurrentSet(exercise, set)"
-                        class="flex items-center justify-center w-[42px] h-[42px] rounded-xl border-0 transition-all duration-200 shrink-0"
+                        class="flex items-center justify-center w-[34px] h-[34px] sm:w-[42px] sm:h-[42px] rounded-lg sm:rounded-xl border-0 transition-all duration-200 shrink-0"
                         :class="canSaveSet(set) ? 'bg-gradient-to-b from-blue to-blue-strong text-bg shadow-[0_12px_28px_rgba(31,111,235,0.32)] cursor-pointer hover:brightness-110 hover:-translate-y-[1px] active:translate-y-0 active:brightness-95' : 'bg-surface-soft text-text-muted cursor-not-allowed'"
                         type="button"
                         title="Save current set"
@@ -466,18 +466,18 @@ function openHistoryModal(exercise) {
                         :disabled="!canSaveSet(set)"
                         @click="saveCurrentSet(exercise.name, set)"
                       >
-                        <svg class="w-4 h-4 stroke-current fill-none stroke-[2.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-current fill-none stroke-[2.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
                           <path d="M20 6 9 17l-5-5"></path>
                         </svg>
                       </button>
 
                       <span
                         v-else
-                        class="flex items-center justify-center w-[42px] h-[42px] rounded-xl bg-[rgba(88,166,255,0.14)] text-blue shrink-0"
+                        class="flex items-center justify-center w-[34px] h-[34px] sm:w-[42px] sm:h-[42px] rounded-lg sm:rounded-xl bg-[rgba(88,166,255,0.14)] text-blue shrink-0"
                         title="Set saved"
                         aria-label="Set saved"
                       >
-                        <svg class="w-4 h-4 stroke-current fill-none stroke-[2.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-current fill-none stroke-[2.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
                           <path d="M20 6 9 17l-5-5"></path>
                         </svg>
                       </span>
