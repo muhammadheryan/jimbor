@@ -41,13 +41,12 @@ if (route.query.mode === 'quickstart') {
       sets: [],
       history: getExerciseHistory(ex.name),
       helper: ex.target || '',
-      notes: ''
     }))
   } else {
-    workoutQueue.value = JSON.parse(JSON.stringify(activeWorkoutData.queue)).map(ex => ({ ...ex, notes: '' }))
+    workoutQueue.value = JSON.parse(JSON.stringify(activeWorkoutData.queue))
   }
 } else {
-  workoutQueue.value = JSON.parse(JSON.stringify(activeWorkoutData.queue)).map(ex => ({ ...ex, notes: '' }))
+  workoutQueue.value = JSON.parse(JSON.stringify(activeWorkoutData.queue))
 }
 
 const selectedExerciseName = ref(workoutQueue.value[0]?.name ?? null)
@@ -79,7 +78,6 @@ function selectExerciseForQueue(name) {
     sets: [],
     history: getExerciseHistory(name),
     helper: 'Fill the first set to start logging this exercise.',
-    notes: ''
   }
 
   workoutQueue.value.push(newExercise)
@@ -218,6 +216,23 @@ function addSet(exerciseName) {
   })
 }
 
+function isCurrentSet(exercise, set) {
+  return exercise.sets[exercise.sets.length - 1]?.number === set.number
+}
+
+function canSaveSet(set) {
+  return Boolean(set.weight && set.reps)
+}
+
+function saveCurrentSet(exerciseName, set) {
+  const exercise = workoutQueue.value.find((item) => item.name === exerciseName)
+  if (!exercise || !isCurrentSet(exercise, set) || !canSaveSet(set)) {
+    return
+  }
+
+  addSet(exerciseName)
+}
+
 function addExercise() {
   const nextNumber = workoutQueue.value.length + 1
   const newExercise = {
@@ -247,21 +262,29 @@ function finishWorkout() {
 }
 
 const isNoteModalOpen = ref(false)
-const editingExercise = ref(null)
+const editingExerciseName = ref('')
+const editingSet = ref(null)
 const tempNote = ref('')
 
-function openNoteModal(exercise) {
-  editingExercise.value = exercise
-  tempNote.value = exercise.notes || ''
+function closeNoteModal() {
+  isNoteModalOpen.value = false
+  editingExerciseName.value = ''
+  editingSet.value = null
+  tempNote.value = ''
+}
+
+function openNoteModal(exercise, set) {
+  editingExerciseName.value = exercise.name
+  editingSet.value = set
+  tempNote.value = set.notes || ''
   isNoteModalOpen.value = true
 }
 
 function saveNote() {
-  if (editingExercise.value) {
-    editingExercise.value.notes = tempNote.value
+  if (editingSet.value) {
+    editingSet.value.notes = tempNote.value
   }
-  isNoteModalOpen.value = false
-  editingExercise.value = null
+  closeNoteModal()
 }
 
 const isHistoryModalOpen = ref(false)
@@ -369,17 +392,6 @@ function openHistoryModal(exercise) {
                 </svg>
               </button>
 
-              <button 
-                class="relative w-[38px] h-[38px] rounded-full border border-surface-outline bg-surface-soft flex items-center justify-center transition-colors hover:bg-surface-soft-hover shrink-0"
-                :class="{ '!border-blue !bg-blue/10': exercise.notes }"
-                type="button"
-                @click.stop="openNoteModal(exercise)"
-              >
-                <svg class="w-4 h-4 stroke-current fill-none stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
-                  <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                </svg>
-                <span v-if="exercise.notes" class="absolute top-0 right-0 w-2 h-2 bg-blue rounded-full border-2 border-bg shadow-sm animate-pulse"></span>
-              </button>
             </div>
           </button>
 
@@ -390,13 +402,14 @@ function openHistoryModal(exercise) {
             <div class="overflow-hidden">
               <div class="p-[0_24px_24px_24px] flex flex-col gap-6 pt-2">
                 <section class="flex flex-col gap-2 pt-2">
-                  <div v-if="exercise.sets.length" class="flex items-center text-text-muted text-[0.8rem] font-bold tracking-[0.08em] uppercase px-1 mb-2">
+                  <div v-if="exercise.sets.length" class="flex items-center gap-2 sm:gap-3 text-text-muted text-[0.8rem] font-bold tracking-[0.08em] uppercase px-1 mb-2">
                     <span class="w-[48px] text-center">Set</span>
                     <button class="flex-1 text-center bg-transparent border-0 text-text-muted font-bold cursor-pointer hover:text-blue transition-colors group flex items-center justify-center gap-1" @click="toggleUnit">
                       {{ weightUnit }}
                       <svg class="w-3 h-3 opacity-40 group-hover:opacity-100" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M7 15l5 5 5-5M7 9l5-5 5 5"/></svg>
                     </button>
                     <span class="flex-[0.8] text-center">Reps</span>
+                    <span class="w-[96px] text-center">Actions</span>
                   </div>
 
                   <div
@@ -427,10 +440,52 @@ function openHistoryModal(exercise) {
                         @input="handleRepsInput($event, set)"
                       />
                     </label>
+
+                    <div class="flex items-center justify-center gap-2 w-[96px] shrink-0">
+                      <button
+                        class="relative flex items-center justify-center w-[42px] h-[42px] rounded-xl border border-surface-outline bg-surface-soft text-text-muted transition-colors hover:bg-surface-soft-hover hover:text-text shrink-0"
+                        :class="{ '!border-blue !bg-blue/10 !text-blue': set.notes }"
+                        type="button"
+                        title="Set notes"
+                        :aria-label="`Open notes for ${exercise.name} set ${set.number}`"
+                        @click.stop="openNoteModal(exercise, set)"
+                      >
+                        <svg class="w-4 h-4 stroke-current fill-none stroke-2 [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
+                          <path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                        </svg>
+                        <span v-if="set.notes" class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue rounded-full border border-bg"></span>
+                      </button>
+
+                      <button
+                        v-if="isCurrentSet(exercise, set)"
+                        class="flex items-center justify-center w-[42px] h-[42px] rounded-xl border-0 transition-all duration-200 shrink-0"
+                        :class="canSaveSet(set) ? 'bg-gradient-to-b from-blue to-blue-strong text-bg shadow-[0_12px_28px_rgba(31,111,235,0.32)] cursor-pointer hover:brightness-110 hover:-translate-y-[1px] active:translate-y-0 active:brightness-95' : 'bg-surface-soft text-text-muted cursor-not-allowed'"
+                        type="button"
+                        title="Save current set"
+                        aria-label="Save current set"
+                        :disabled="!canSaveSet(set)"
+                        @click="saveCurrentSet(exercise.name, set)"
+                      >
+                        <svg class="w-4 h-4 stroke-current fill-none stroke-[2.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
+                          <path d="M20 6 9 17l-5-5"></path>
+                        </svg>
+                      </button>
+
+                      <span
+                        v-else
+                        class="flex items-center justify-center w-[42px] h-[42px] rounded-xl bg-[rgba(88,166,255,0.14)] text-blue shrink-0"
+                        title="Set saved"
+                        aria-label="Set saved"
+                      >
+                        <svg class="w-4 h-4 stroke-current fill-none stroke-[2.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24">
+                          <path d="M20 6 9 17l-5-5"></path>
+                        </svg>
+                      </span>
+                    </div>
                   </div>
 
-                  <div class="flex items-center justify-end gap-3 mt-3 pt-4 border-t border-[rgba(240,246,252,0.04)]">
-                    <button class="inline-flex items-center justify-center gap-1.5 min-h-[36px] px-[12px] py-[4px] rounded-[12px] text-[0.78rem] font-extrabold tracking-wide cursor-pointer border-0 bg-[rgba(88,166,255,0.12)] text-blue hover:bg-[rgba(88,166,255,0.2)] transition-colors shrink-0 uppercase" type="button" @click="addSet(exercise.name)">+ Add Set</button>
+                  <div v-if="!exercise.sets.length" class="flex items-center justify-end gap-3 mt-3 pt-4 border-t border-[rgba(240,246,252,0.04)]">
+                    <button class="inline-flex items-center justify-center gap-1.5 min-h-[36px] px-[12px] py-[4px] rounded-[12px] text-[0.78rem] font-extrabold tracking-wide cursor-pointer border-0 bg-[rgba(88,166,255,0.12)] text-blue hover:bg-[rgba(88,166,255,0.2)] transition-colors shrink-0 uppercase" type="button" @click="addSet(exercise.name)">+ Add First Set</button>
                   </div>
                 </section>
               </div>
@@ -581,23 +636,23 @@ function openHistoryModal(exercise) {
       </section>
     </div>
     <!-- Note Modal -->
-    <div v-if="isNoteModalOpen" class="fixed inset-0 z-[1400] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" @click.self="isNoteModalOpen = false">
+    <div v-if="isNoteModalOpen" class="fixed inset-0 z-[1400] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm" @click.self="closeNoteModal">
       <section class="w-full max-w-[400px] flex flex-col p-6 rounded-[28px] bg-bg-elevated border border-surface-outline shadow-custom">
         <div class="flex items-center justify-between mb-4">
-          <h2 class="m-0 text-xl font-extrabold">Exercise Note</h2>
+          <h2 class="m-0 text-xl font-extrabold">Set Note</h2>
         </div>
         
-        <p v-if="editingExercise" class="text-text-muted text-sm mb-4 uppercase tracking-wider font-bold">{{ editingExercise.name }}</p>
+        <p v-if="editingSet" class="text-text-muted text-sm mb-4 uppercase tracking-wider font-bold">{{ editingExerciseName }} • Set {{ editingSet.number }}</p>
  
         <textarea
           v-model="tempNote"
           class="w-full min-h-[160px] p-4 text-left border border-surface-outline rounded-xl bg-surface text-text outline-none focus:border-blue transition-colors resize-none font-medium leading-relaxed"
-          placeholder="Add exercise cues, equipment settings, or general observations..."
+          placeholder="Add cues, tempo, equipment settings, or observations for this set..."
           autofocus
         ></textarea>
  
         <div class="flex gap-3 mt-6">
-          <button class="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-[18px] font-bold cursor-pointer border border-surface-outline bg-surface-soft text-text transition-colors hover:bg-surface-soft-hover" type="button" @click="isNoteModalOpen = false">Cancel</button>
+          <button class="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-[18px] font-bold cursor-pointer border border-surface-outline bg-surface-soft text-text transition-colors hover:bg-surface-soft-hover" type="button" @click="closeNoteModal">Cancel</button>
           <button class="flex-1 inline-flex items-center justify-center gap-2 min-h-[48px] px-4 rounded-[18px] font-bold cursor-pointer border-0 bg-blue text-bg active:opacity-80" type="button" @click="saveNote">Save Note</button>
         </div>
       </section>

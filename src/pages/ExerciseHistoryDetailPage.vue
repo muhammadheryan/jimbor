@@ -154,6 +154,8 @@ const historyPage = ref(1)
 const historyPageSize = 5
 const selectedSessionDetail = ref(null)
 const isChartFullscreen = ref(false)
+const activeChartPointIndex = ref(-1)
+const isChartScrubbing = ref(false)
 
 const latestSession = computed(() => filteredChartSessions.value.at(-1) ?? null)
 const bestWeight = computed(() =>
@@ -242,6 +244,20 @@ const chartPoints = computed(() =>
   }),
 )
 
+const activeChartPoint = computed(() => {
+  if (!chartPoints.value.length) {
+    return null
+  }
+
+  const fallbackIndex = chartPoints.value.length - 1
+  const safeIndex =
+    activeChartPointIndex.value >= 0 && activeChartPointIndex.value < chartPoints.value.length
+      ? activeChartPointIndex.value
+      : fallbackIndex
+
+  return chartPoints.value[safeIndex] ?? null
+})
+
 const buildLinePath = (points, key) =>
   points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point[key]}`).join(' ')
 
@@ -283,6 +299,21 @@ watch(filteredSessionHistory, () => {
   historyPage.value = 1
 })
 
+watch(
+  chartPoints,
+  (points) => {
+    if (!points.length) {
+      activeChartPointIndex.value = -1
+      return
+    }
+
+    if (activeChartPointIndex.value < 0 || activeChartPointIndex.value >= points.length) {
+      activeChartPointIndex.value = points.length - 1
+    }
+  },
+  { immediate: true },
+)
+
 const goToPreviousHistoryPage = () => {
   historyPage.value = Math.max(1, historyPage.value - 1)
 }
@@ -305,6 +336,45 @@ const openChartFullscreen = () => {
 
 const closeChartFullscreen = () => {
   isChartFullscreen.value = false
+}
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+
+const updateChartPointFromPointer = (event) => {
+  if (!chartPoints.value.length) {
+    return
+  }
+
+  const bounds = event.currentTarget?.getBoundingClientRect?.()
+  if (!bounds?.width) {
+    return
+  }
+
+  const ratio = clamp((event.clientX - bounds.left) / bounds.width, 0, 1)
+  const index = chartPoints.value.length === 1 ? 0 : Math.round(ratio * (chartPoints.value.length - 1))
+  activeChartPointIndex.value = index
+}
+
+const beginChartScrub = (event) => {
+  isChartScrubbing.value = true
+  event.currentTarget?.setPointerCapture?.(event.pointerId)
+  updateChartPointFromPointer(event)
+}
+
+const handleChartScrubMove = (event) => {
+  if (!chartPoints.value.length || (!isChartScrubbing.value && event.pointerType !== 'mouse')) {
+    return
+  }
+
+  updateChartPointFromPointer(event)
+}
+
+const endChartScrub = (event) => {
+  if (event?.pointerId !== undefined) {
+    event.currentTarget?.releasePointerCapture?.(event.pointerId)
+  }
+
+  isChartScrubbing.value = false
 }
 </script>
 
@@ -399,6 +469,24 @@ const closeChartFullscreen = () => {
             </div>
           </div>
 
+          <div v-if="activeChartPoint" class="mb-4 grid gap-3 md:grid-cols-[minmax(0,1.5fr)_repeat(2,minmax(0,0.8fr))]">
+            <div class="rounded-[22px] border border-[rgba(88,166,255,0.18)] bg-[rgba(255,255,255,0.03)] px-4 py-3">
+              <p class="m-0 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-text-muted">Selected Session</p>
+              <p class="m-0 mt-2 text-base font-extrabold text-text">{{ activeChartPoint.date }}</p>
+              <p class="m-0 mt-1 text-sm leading-[1.5] text-text-soft">{{ activeChartPoint.detail }}</p>
+            </div>
+            <div class="rounded-[22px] border border-[rgba(57,211,83,0.18)] bg-[rgba(57,211,83,0.08)] px-4 py-3">
+              <p class="m-0 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-text-muted">Weight</p>
+              <p class="m-0 mt-2 text-2xl font-black text-green">{{ activeChartPoint.weight }} kg</p>
+            </div>
+            <div class="rounded-[22px] border border-[rgba(88,166,255,0.18)] bg-[rgba(88,166,255,0.08)] px-4 py-3">
+              <p class="m-0 text-[0.72rem] font-bold uppercase tracking-[0.12em] text-text-muted">Reps</p>
+              <p class="m-0 mt-2 text-2xl font-black text-blue">{{ activeChartPoint.reps }}</p>
+            </div>
+          </div>
+
+          <p class="mb-4 text-sm text-text-muted">Geser garis vertikal di chart untuk melihat detail tiap sesi.</p>
+
           <svg :viewBox="`0 0 ${chartFrame.width} ${chartFrame.height}`" class="w-full overflow-visible">
             <g>
               <line
@@ -444,15 +532,35 @@ const closeChartFullscreen = () => {
               <path :d="repPath" fill="none" stroke="var(--blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
             </g>
 
+            <g v-if="activeChartPoint">
+              <line
+                :x1="activeChartPoint.x"
+                :x2="activeChartPoint.x"
+                :y1="chartFrame.paddingTop"
+                :y2="chartFrame.height - chartFrame.paddingBottom"
+                stroke="rgba(88,166,255,0.72)"
+                stroke-width="2"
+                stroke-dasharray="6 6"
+              />
+              <circle
+                :cx="activeChartPoint.x"
+                :cy="chartFrame.height - chartFrame.paddingBottom"
+                r="9"
+                fill="rgba(88,166,255,0.22)"
+                stroke="var(--blue)"
+                stroke-width="2"
+              />
+            </g>
+
             <g>
               <g v-for="point in chartPoints" :key="`weight-point-${point.isoDate}`">
-                <circle :cx="point.x" :cy="point.weightY" r="6" fill="var(--green)" />
-                <circle :cx="point.x" :cy="point.weightY" r="11" fill="rgba(57,211,83,0.12)" />
+                <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--green)" />
+                <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(57,211,83,0.12)" />
               </g>
 
               <g v-for="point in chartPoints" :key="`rep-point-${point.isoDate}`">
-                <circle :cx="point.x" :cy="point.repsY" r="6" fill="var(--blue)" />
-                <circle :cx="point.x" :cy="point.repsY" r="11" fill="rgba(88,166,255,0.12)" />
+                <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--blue)" />
+                <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(88,166,255,0.12)" />
               </g>
             </g>
 
@@ -462,13 +570,27 @@ const closeChartFullscreen = () => {
                 :key="`label-${point.isoDate}`"
                 :x="point.x"
                 :y="chartFrame.height - 10"
-                fill="rgba(240,246,252,0.62)"
+                :fill="activeChartPoint?.isoDate === point.isoDate ? 'rgba(240,246,252,0.92)' : 'rgba(240,246,252,0.62)'"
                 font-size="11"
                 text-anchor="middle"
+                :font-weight="activeChartPoint?.isoDate === point.isoDate ? '700' : '500'"
               >
                 {{ point.axisLabel }}
               </text>
             </g>
+
+            <rect
+              :x="chartFrame.paddingLeft"
+              :y="chartFrame.paddingTop"
+              :width="plotWidth"
+              :height="plotHeight"
+              fill="transparent"
+              class="cursor-ew-resize touch-none"
+              @pointerdown="beginChartScrub"
+              @pointermove="handleChartScrubMove"
+              @pointerup="endChartScrub"
+              @pointercancel="endChartScrub"
+            />
           </svg>
         </div>
 
@@ -611,6 +733,22 @@ const closeChartFullscreen = () => {
           </div>
 
           <div v-if="chartPoints.length" class="flex-1 overflow-hidden rounded-[24px] border border-surface-outline bg-[linear-gradient(180deg,rgba(88,166,255,0.08)_0%,rgba(15,20,27,0.96)_100%)] p-3">
+            <div v-if="activeChartPoint" class="mb-3 grid gap-3 grid-cols-[minmax(0,1.4fr)_repeat(2,minmax(0,0.8fr))]">
+              <div class="rounded-[20px] border border-[rgba(88,166,255,0.18)] bg-[rgba(255,255,255,0.03)] px-3 py-2.5">
+                <p class="m-0 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-text-muted">Selected Session</p>
+                <p class="m-0 mt-1.5 text-sm font-extrabold text-text">{{ activeChartPoint.date }}</p>
+                <p class="m-0 mt-1 text-[0.78rem] leading-[1.4] text-text-soft">{{ activeChartPoint.detail }}</p>
+              </div>
+              <div class="rounded-[20px] border border-[rgba(57,211,83,0.18)] bg-[rgba(57,211,83,0.08)] px-3 py-2.5">
+                <p class="m-0 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-text-muted">Weight</p>
+                <p class="m-0 mt-1.5 text-xl font-black text-green">{{ activeChartPoint.weight }} kg</p>
+              </div>
+              <div class="rounded-[20px] border border-[rgba(88,166,255,0.18)] bg-[rgba(88,166,255,0.08)] px-3 py-2.5">
+                <p class="m-0 text-[0.68rem] font-bold uppercase tracking-[0.12em] text-text-muted">Reps</p>
+                <p class="m-0 mt-1.5 text-xl font-black text-blue">{{ activeChartPoint.reps }}</p>
+              </div>
+            </div>
+
             <svg :viewBox="`0 0 ${chartFrame.width} ${chartFrame.height}`" class="h-full w-full overflow-visible">
               <g>
                 <line
@@ -656,15 +794,35 @@ const closeChartFullscreen = () => {
                 <path :d="repPath" fill="none" stroke="var(--blue)" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5" />
               </g>
 
+              <g v-if="activeChartPoint">
+                <line
+                  :x1="activeChartPoint.x"
+                  :x2="activeChartPoint.x"
+                  :y1="chartFrame.paddingTop"
+                  :y2="chartFrame.height - chartFrame.paddingBottom"
+                  stroke="rgba(88,166,255,0.72)"
+                  stroke-width="2"
+                  stroke-dasharray="6 6"
+                />
+                <circle
+                  :cx="activeChartPoint.x"
+                  :cy="chartFrame.height - chartFrame.paddingBottom"
+                  r="9"
+                  fill="rgba(88,166,255,0.22)"
+                  stroke="var(--blue)"
+                  stroke-width="2"
+                />
+              </g>
+
               <g>
                 <g v-for="point in chartPoints" :key="`fullscreen-weight-point-${point.isoDate}`">
-                  <circle :cx="point.x" :cy="point.weightY" r="6" fill="var(--green)" />
-                  <circle :cx="point.x" :cy="point.weightY" r="11" fill="rgba(57,211,83,0.12)" />
+                  <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--green)" />
+                  <circle :cx="point.x" :cy="point.weightY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(57,211,83,0.12)" />
                 </g>
 
                 <g v-for="point in chartPoints" :key="`fullscreen-rep-point-${point.isoDate}`">
-                  <circle :cx="point.x" :cy="point.repsY" r="6" fill="var(--blue)" />
-                  <circle :cx="point.x" :cy="point.repsY" r="11" fill="rgba(88,166,255,0.12)" />
+                  <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 7.5 : 6" fill="var(--blue)" />
+                  <circle :cx="point.x" :cy="point.repsY" :r="activeChartPoint?.isoDate === point.isoDate ? 14 : 11" fill="rgba(88,166,255,0.12)" />
                 </g>
               </g>
 
@@ -674,13 +832,27 @@ const closeChartFullscreen = () => {
                   :key="`fullscreen-label-${point.isoDate}`"
                   :x="point.x"
                   :y="chartFrame.height - 10"
-                  fill="rgba(240,246,252,0.62)"
+                  :fill="activeChartPoint?.isoDate === point.isoDate ? 'rgba(240,246,252,0.92)' : 'rgba(240,246,252,0.62)'"
                   font-size="11"
                   text-anchor="middle"
+                  :font-weight="activeChartPoint?.isoDate === point.isoDate ? '700' : '500'"
                 >
                   {{ point.axisLabel }}
                 </text>
               </g>
+
+              <rect
+                :x="chartFrame.paddingLeft"
+                :y="chartFrame.paddingTop"
+                :width="plotWidth"
+                :height="plotHeight"
+                fill="transparent"
+                class="cursor-ew-resize touch-none"
+                @pointerdown="beginChartScrub"
+                @pointermove="handleChartScrubMove"
+                @pointerup="endChartScrub"
+                @pointercancel="endChartScrub"
+              />
             </svg>
           </div>
 
